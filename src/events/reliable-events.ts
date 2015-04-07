@@ -1,17 +1,12 @@
 /// <reference path='../../../third_party/typings/es6-promise/es6-promise.d.ts' />
 
-// This file defines 'handler queues'. These are an abstraction for a stream of
-// events (but think of an event as an element of data to be handled) along with
-// a stream of functions to handle the events. Each event is guarenteed to be
-// handled, and gets a promise for the result of that event being handled. A
-// function handling an event may set the function that handles future events,
-// or it may stop handling events in which case the event stream will be queued
-// until a handler is set.
-//
-// This is a bit like traditional event handlers, but each thing in the hanlder
-// queue must be handled by exactly one handler (although that handler may
-// itself call several functions). This allows async assignment of the handler
-// along with asynchronous adding of events to the queue.
+// This file defines 'reliable events'. These are an abstraction for a stream of
+// events (we think of an event as an element of data to be handled) and a
+// function to handle the events which can be set. Each event is guarenteed to
+// be handled, and gets a promise for the result of that event being handled.
+// The function handling events may itself set the next/future event handler
+// function. Unlike traditional event hanlding, when the event handler function
+// is not set (or set to null) events are queued until an event handler is set.
 //
 // CONSIDER: How efficient is a new Error? Maybe best to have rejection
 // without an error since the error is not meaningful.
@@ -23,18 +18,18 @@
 // CONSIDER: This is kind of similar to functional parsing. May be good to
 // formalize the relationship in comments here.
 
-// The |QueueFeeder| is the abstraction for events to be handled.
-export interface QueueFeeder<Feed,Result> {
+// The |EventEmiter| is the abstraction for events to be handled.
+export interface EventEmiter<EventData,EventResult> {
   // Number of things in the queue to be handled.
-  getLength() : number;
+  getLength() :number;
   // Called by code that wants |x| to be handled. Returns a promise for
   // when |x| is handled. Queues |x| until it can be handled.
-  handle(x:Feed) : Promise<Result>;
+  emit(x:EventData) :Promise<EventResult>;
 }
 
-// The |HandlerQueueStats| class contains increment-only counters
-// characterizing the state and history of a |QueueHandler|.
-export class HandlerQueueStats {
+// The |EventQueueStats| class contains increment-only counters
+// characterizing the state and history of a |EventHandler|.
+export class EventQueueStats {
   // Total events ever input by the HandlerQueue.  Intent:
   //
   // queued_events + immediately_handled_events + rejected_events =
@@ -42,82 +37,82 @@ export class HandlerQueueStats {
   //
   // queued_events - queued_handled_events - rejected_events = number
   //   of events in queue right now.
-  total_events : number;
+  total_events :number;
   // Ever-queued-events
-  queued_events : number;
+  queued_events :number;
   // Events that were immediately handled (b/c there was a handler set).
-  immediately_handled_events : number;
+  immediately_handled_events :number;
   // Events that were handled after going through the queue.
-  queued_handled_events : number;
+  queued_handled_events :number;
   // Number of events rejected in a queue clear.
-  rejected_events : number;
+  rejected_events :number;
   // Number of times a handler was set on this queue (the handler was
   // previously null).
-  handler_set_count : number;
+  handler_set_count :number;
   // Number of times a handler was changed on this queue (the handler
   // was previously non-null).
-  handler_change_count : number;
+  handler_change_count :number;
   // Number of times a handler was un-set on this queue (when then
   // handler previously non-null).
-  handler_clear_count : number;
+  handler_clear_count :number;
   // Number of times we set a new handler while we have an existing
   // promise, causing a rejection of that promise.
-  handler_rejections : number;
+  handler_rejections :number;
 }
 
-// The |QueueHandler| is the abstraction for the stream of functions that
+// The |EventHandler| is the abstraction for the stream of functions that
 // handles events.
-export interface QueueHandler<Feed,Result> {
+export interface EventHandler<EventData,EventResult> {
   // Clears the queue, and rejects promises for |handle| callers that added
   // entries in the queue.
-  clear() : void;
+  clear() :void;
   // Number of things in the queue to be handled.
-  getLength() : number;
+  getLength() :number;
   // The |setHandler|'s handler function |f| will be called on the next element
   // until the queue is empty or the handler itself is changed (e.g. if
   // |stopHandling()| is called while handling an event then further events
   // will be queued until a new handler is set).
-  setHandler(f:(x:Feed) => Promise<Result>) : void;
+  setHandler(f:(x:EventData) => Promise<EventResult>) :void;
   // As above, but takes a sync function handler.
-  setSyncHandler(f:(x:Feed) => Result) : void;
+  setSyncHandler(f:(x:EventData) => EventResult) :void;
   // Sets the next function to handle something in the handler queue. Returns
   // a promise for the result of the next handled event in the queue. Note: if
   // the queue is empty, the promise resolves the next time `handle` is called
   // (assuming by then the queue isn't stopped or handler changed by then).
-  setNextHandler(f:(x:Feed) => Promise<Result>) : Promise<Result>;
+  setNextHandler(f:(x:EventData) => Promise<EventResult>) :Promise<EventResult>;
   // As above, but takes a sync handler.
-  setSyncNextHandler(f:(x:Feed) => Result) : Promise<Result>;
+  setSyncNextHandler(f:(x:EventData) => EventResult) :Promise<EventResult>;
   // Returns true if on of the |set*| functions has been called but
   // |stopHandling| has not. Returns false after |stopHandling| has been
   // called.
-  isHandling() : boolean;
+  isHandling() :boolean;
   // The queue stops being handled and all future that |handle| is called on
   // are queued. If |setSyncNextHandler| or |setAsyncNextHandler| has been
   // called, then its return promise is rejected.
-  stopHandling() : void;
+  stopHandling() :void;
   // Get statistics on queue handler.
-  getStats() : HandlerQueueStats;
+  getStats() :EventQueueStats;
 }
 
-// Internal helper class. Holds an object called |thing| of type |T| and
-// provides a promise for a new result object of type |T2|. The idea is that
-// |T2| is will be result of some async function applied to |thing|. This
-// helper supports the function that gerates the new object to be known async
-// (i.e. later), but still being able to promise a promise for the result
-// immidiately.
+// Internal helper class. Holds an object called |thing| of type |EventData| and
+// provides a promise for a new result object of type |EventResult|. The idea is
+// that |EventResult| is will be result of some async function applied to
+// |thing|. This helper supports the function that gerates the new object to be
+// known async (i.e. later), but still being able to promise a promise for the
+// result immidiately.
 //
 // Assumes fulfill/reject are called exclusively and only once.
-class PendingPromiseHandler<T,T2> {
-  public promise   :Promise<T2>
-  private fulfill_ :(x:T2) => void;
+class PendingPromiseHandler<EventData,EventResult> {
+  public promise   :Promise<EventResult>
+  private fulfill_ :(x:EventResult) => void;
   private reject_  :(e:Error) => void;
   private completed_ :boolean;
 
   constructor(public thing:T) {
-    // This holds the T object, and fulfills with a T2 when fulfill is called
-    // with T2. The point is we can give back the promise now but fulfill can
-    // be called later.
-    this.promise = new Promise<T2>((F,R) => {
+    // This holds the |EventData| object, and fulfills with a |EventResult| when
+    // fulfill is called with |EventResult|. The point is we can give back the
+    // promise now but fulfill can be called later.
+    this.promise = new Promise<EventResult>((F,R) => {
         this.fulfill_ = F;
         this.reject_ = R;
       });
@@ -133,7 +128,7 @@ class PendingPromiseHandler<T,T2> {
     this.reject_(e);
   }
 
-  public handleWith = (handler:(x:T) => Promise<T2>) : void => {
+  public handleWith = (handler:(x:EventData) => Promise<EventResult>) :void => {
     if (this.completed_) {
       console.error('handleWith must not be called on a completed promise.');
       return;
@@ -144,11 +139,11 @@ class PendingPromiseHandler<T,T2> {
 }
 
 
-// The |Queue| class provides a |QueueFeeder| and a |QueueHandler|. The idea is
-// that the QueueHandler processes inputs of type |Feed| from the |QueueFeeder|
-// and gives back promises for objects of type |Result|. The handle function
-// takes objects of type |Feed| and promises objects of type |Result| (the
-// handler may run asynchonously).
+// The |EventQueue| class provides an |EventEmiter| and an |EventHandler|. The
+// idea is that the |EventHandler| processes inputs of type |EventData| from the
+// |EventEmiter| and gives back promises for objects of type |Result|. The
+// handle function takes objects of type |EventData| and promises objects of type
+// |Result| (the handler may run asynchonously).
 //
 // When the handler is set to |null|, objects are queued up to be handled. When
 // the handler is set to not a non-null function, everything in the queue is
@@ -157,15 +152,15 @@ class PendingPromiseHandler<T,T2> {
 //
 // CONSIDER: this is a kind of co-promise, and can probably be
 // extended/generalized.
-export class Queue<Feed,Result>
-    implements QueueFeeder<Feed,Result>, QueueHandler<Feed,Result> {
+export class EventQueue<EventData,Result>
+    implements EventEmiter<EventData,Result>, EventHandler<EventData,Result> {
   // The queue of things to handle.
-  private queue_ :PendingPromiseHandler<Feed, Result>[] = [];
+  private queue_ :PendingPromiseHandler<EventData, Result>[] = [];
 
   // Handler function for things on the queue. When null, things queue up.
   // When non-null, gets called on the thing to handle. When set, called on
   // everything in the queue in FIFO order.
-  private handler_ :(x:Feed) => Promise<Result> = null;
+  private handler_ :(x:EventData) => Promise<Result> = null;
 
   // We store a handler's promise rejection function and call it when
   // `setHandler`  is called and we had a previously promised handler. We need
@@ -174,7 +169,7 @@ export class Queue<Feed,Result>
   private rejectFn_ : (e:Error) => void = null;
 
   // Handler statistics.
-  private stats_  = new HandlerQueueStats();
+  private stats_  = new EventQueueStats();
 
   // CONSIDER: allow queue to be size-bounded? Reject on too much stuff?
   constructor() {}
@@ -187,12 +182,12 @@ export class Queue<Feed,Result>
     return this.handler_ !== null;
   }
 
-  public getStats = () : HandlerQueueStats => {
+  public getStats = () : EventQueueStats => {
     return this.stats_;
   }
 
   // handle or queue the given thing.
-  public handle = (x:Feed) : Promise<Result> => {
+  public handle = (x:EventData) : Promise<Result> => {
     this.stats_.total_events++;
 
     if (this.handler_) {
@@ -230,7 +225,7 @@ export class Queue<Feed,Result>
   //
   // If you have an unfulfilled promise, calling setHandler rejects the old
   // promise.
-  public setHandler = (handler:(x:Feed) => Promise<Result>) : void => {
+  public setHandler = (handler:(x:EventData) => Promise<Result>) : void => {
     if (this.rejectFn_) {
       this.stats_.handler_rejections++;
       this.rejectFn_(new Error('Cancelled by a call to setHandler'));
@@ -247,8 +242,8 @@ export class Queue<Feed,Result>
 
   // Convenience function for handler to be an ordinary function without a
   // promise result.
-  public setSyncHandler = (handler:(x:Feed) => Result) : void => {
-    this.setHandler((x:Feed) => { return Promise.resolve(handler(x)); });
+  public setSyncHandler = (handler:(x:EventData) => Result) : void => {
+    this.setHandler((x:EventData) => { return Promise.resolve(handler(x)); });
   }
 
   // Reject the previous promise handler if it exists and stop handling stuff.
@@ -271,12 +266,12 @@ export class Queue<Feed,Result>
   //
   // Note: this sets the Handler to fulfill this promise when there is
   // something to handle.
-  public setNextHandler = (handler:(x:Feed) => Promise<Result>)
+  public setNextHandler = (handler:(x:EventData) => Promise<Result>)
       : Promise<Result> => {
     this.stats_.handler_set_count++;
 
     return new Promise((F,R) => {
-      this.setHandler((x:Feed) : Promise<Result> => {
+      this.setHandler((x:EventData) : Promise<Result> => {
         // Note: we don't call stopHandling() within this handler because that
         // would reject the promise we're about to fulfill.
         this.handler_ = null;
@@ -291,8 +286,8 @@ export class Queue<Feed,Result>
   }
 
   // Convenience function for handling next element with an ordinary function.
-  public setSyncNextHandler = (handler:(x:Feed) => Result) : Promise<Result> => {
-    return this.setNextHandler((x:Feed) => {
+  public setSyncNextHandler = (handler:(x:EventData) => Result) : Promise<Result> => {
+    return this.setNextHandler((x:EventData) => {
         return Promise.resolve(handler(x));
       });
   }

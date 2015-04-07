@@ -24,7 +24,7 @@ export interface AggregateHandler<T, T2> {
   handle(x:T) : Promise<T2>;
 
   // The |tryNext| function will check if the aggregate of every |T| is now
-  // ready to produce a new |T2|. If try returns |true| then a new
+  // ready to produce a new |T2|. If tryNext returns |true| then a new
   // |nextAggregate| has been created and the old one has been fulfilled. If
   // |tryNext| returns |false| then |nextAggregate| is unchanged.
   tryNext() : boolean;
