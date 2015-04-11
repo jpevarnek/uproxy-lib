@@ -9,7 +9,8 @@ export enum Type {
   // suggests, not all values may be found in practice:
   //   https://code.google.com/p/chromium/codesearch#chromium/src/third_party/webrtc/p2p/base/port.cc&q=port.cc&l=107
   CANDIDATE,          // signal data to send to peer
-  NO_MORE_CANDIDATES  // no more data to send to peer
+  NO_MORE_CANDIDATES,  // no more data to send to peer
+  CANCEL_OFFER // Cancel initiation of connection.
 }
 
 export interface Message {

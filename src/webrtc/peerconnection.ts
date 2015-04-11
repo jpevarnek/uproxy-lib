@@ -233,6 +233,9 @@ export class PeerConnectionClass implements PeerConnection<signals.Message> {
     log.info(this.peerName_ + ': ' + 'close');
 
     if (this.pcState === State.CONNECTING) {
+      this.emitSignalForPeer_({
+        type: signals.Type.CANCEL_OFFER
+      });
       this.rejectConnected_(new Error('close was called while connecting.'));
     }
 
