@@ -30,6 +30,7 @@
     "core.tcpsocket",
     "core.udpsocket",
     "core.rtcdatachannel",
-    "core.rtcpeerconnection"
+    "core.rtcpeerconnection",
+    "core.udppipe"
   ]
 }

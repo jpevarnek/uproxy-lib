@@ -322,7 +322,7 @@ var log :logging.Log = new logging.Log('churn');
         remoteEndpoint:net.Endpoint,
         natEndpoints:NatPair) : void => {
       log.debug('%1: configuring pipes...', this.peerName);
-      this.pipe_ = freedom['churnPipe']();
+      this.pipe_ = freedom['core.udppipe']();
       this.pipe_.setTransformer('caesar',
           new Uint8Array([13]).buffer,
           '{}');
