@@ -339,6 +339,17 @@ var log :logging.Log = new logging.Log('churn');
         }
       });
       this.probeConnection_.negotiateConnection();
+      // On Firefox, NO_MORE_CANDIDATES can be grossly delayed, but the
+      // obfuscated connection will transition to IceConnectionState "failed"
+      // after 5 seconds without receiving candidates.  Candidate gathering
+      // should actually be very quick, so we work around this by declaring
+      // the probing complete after 3 seconds, if it hasn't already completed.
+      log.debug('%1: Starting cutoff timer', this.peerName);
+      setTimeout(() => {
+        var selected = selectPublicAddress(this.probeCandidates_)
+        log.debug('%1: Firing cutoff timer with %2', this.peerName, selected);
+        this.probingComplete_(selected);
+      }, 3000);
     }
 
     private configurePipe_ = (
