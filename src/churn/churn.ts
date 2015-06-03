@@ -347,8 +347,10 @@ var log :logging.Log = new logging.Log('churn');
       log.debug('%1: Starting cutoff timer', this.peerName);
       setTimeout(() => {
         var selected = selectPublicAddress(this.probeCandidates_)
-        log.debug('%1: Firing cutoff timer with %2', this.peerName, selected);
-        this.probingComplete_(selected);
+        log.debug('%1: Closing probe connection due to cutoff timer with %2', this.peerName, selected);
+          this.probeConnection_.close().then(() => {
+            this.probingComplete_(selected);
+          });
       }, 3000);
     }
 
