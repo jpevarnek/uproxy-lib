@@ -349,8 +349,9 @@ var log :logging.Log = new logging.Log('churn');
         var selected = selectPublicAddress(this.probeCandidates_)
         log.debug('%1: Closing probe connection due to cutoff timer with %2', this.peerName, selected);
           this.probeConnection_.close().then(() => {
+            log.debug('%1: Probe connection close completed', this.peerName);
             this.probingComplete_(selected);
-          });
+          }, (e) => { log.error('Probe connection close failed: %1', e); });
       }, 3000);
     }
 
