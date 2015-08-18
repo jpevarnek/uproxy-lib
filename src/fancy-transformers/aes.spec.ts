@@ -16,14 +16,14 @@ describe('AES encryption and decryption - zero key, zero iv, zero data', functio
     var ciphertext=cbc.encrypt(plaintext);
     expect(arraybuffers.byteEquality(
       ciphertext,
-      arraybuffers.hexStringToArrayBuffer("66.e9...2b.2e")
+      arraybuffers.hexStringToArrayBuffer("66.e9.4b.d4.ef.8a.2c.3b.88.4c.fa.59.ca.34.2b.2e")
     )).toBe(true);
   });
   it('AES(key: zeros, iv: zeros).decrypt(66.e9...2b.2e)==zeros', function() {
     var key=new ArrayBuffer(16);
     var iv=new ArrayBuffer(16);
     var cbc=new aes.ModeOfOperationCBC(key, iv);
-    var ciphertext=arraybuffers.hexStringToArrayBuffer("66.e9...2b.2e");
+    var ciphertext=arraybuffers.hexStringToArrayBuffer("66.e9.4b.d4.ef.8a.2c.3b.88.4c.fa.59.ca.34.2b.2e");
     var plaintext=cbc.decrypt(ciphertext);
     expect(arraybuffers.byteEquality(plaintext, new ArrayBuffer(16))).toBe(true);
   });
@@ -40,8 +40,7 @@ describe('AES encryption and decryption - zero key, zero iv, zero data', functio
 });
 
 describe('AES encryption and decryption - zero key, zero iv, zero data - two rounds', function() {
-  it('Round 1: AES(key: zeros, iv: zeros).encrypt(zeros)==66.e9...2b.2e, '+
-     'Round 2: AES(key: zeros, iv: zeros).encrypt(zeros)==f7.95...8d.bc', function() {
+  it('Two Rounds: AES(key: zeros, iv: zeros).encrypt(zeros)==f7.95...8d.bc', function() {
     var key=new ArrayBuffer(16);
     var iv=new ArrayBuffer(16);
     var cbc=new aes.ModeOfOperationCBC(key, iv);
@@ -49,30 +48,28 @@ describe('AES encryption and decryption - zero key, zero iv, zero data - two rou
     var ciphertext=cbc.encrypt(plaintext);
     expect(arraybuffers.byteEquality(
       ciphertext,
-      arraybuffers.hexStringToArrayBuffer("66.e9...2b.2e")
+      arraybuffers.hexStringToArrayBuffer("66.e9.4b.d4.ef.8a.2c.3b.88.4c.fa.59.ca.34.2b.2e")
     )).toBe(true);
     var ciphertext2=cbc.encrypt(plaintext);
     expect(arraybuffers.byteEquality(
       ciphertext2,
-      arraybuffers.hexStringToArrayBuffer("f7.95...8d.bc")
+      arraybuffers.hexStringToArrayBuffer("f7.95.bd.4a.52.e2.9e.d7.13.d3.13.fa.20.e9.8d.bc")
     )).toBe(true);
   });
-  it('Round 1: AES(key: zeros, iv: zeros).decrypt(66.e9...2b.2e)==zeros, '+
-     'Round 2: AES(key: zeros, iv: zeros).decrypt(f7.95...8d.bc)==zeros', function() {
+  it('Two rounds: AES(key: zeros, iv: zeros).decrypt(f7.95...8d.bc)==zeros', function() {
     var target=new ArrayBuffer(16);
 
     var key=new ArrayBuffer(16);
     var iv=new ArrayBuffer(16);
     var cbc=new aes.ModeOfOperationCBC(key, iv);
-    var ciphertext=arraybuffers.hexStringToArrayBuffer("66.e9...2b.2e");
+    var ciphertext=arraybuffers.hexStringToArrayBuffer("66.e9.4b.d4.ef.8a.2c.3b.88.4c.fa.59.ca.34.2b.2e");
     var plaintext=cbc.decrypt(ciphertext);
     expect(arraybuffers.byteEquality(plaintext, target)).toBe(true);
-    var ciphertext2=arraybuffers.hexStringToArrayBuffer("f7.95...8d.bc");
+    var ciphertext2=arraybuffers.hexStringToArrayBuffer("f7.95.bd.4a.52.e2.9e.d7.13.d3.13.fa.20.e9.8d.bc");
     var plaintext2=cbc.decrypt(ciphertext2);
     expect(arraybuffers.byteEquality(plaintext, target)).toBe(true);
   });
-  it('Round 1: AES(key: zeros, iv: zeros).decrypt(encrypt(zeros))==zeros, '+
-     'Round 2: AES(key: zeros, iv: zeros).decrypt(encrypt(zeros))==zeros', function() {
+  it('Two rounds: AES(key: zeros, iv: zeros).decrypt(encrypt(zeros))==zeros', function() {
     var target=new ArrayBuffer(16);
 
     var key=new ArrayBuffer(16);
@@ -140,7 +137,7 @@ describe('AES encryption and decryption - zero key, zero iv, real data', functio
     var plaintext2=cbc.decrypt(ciphertext);
     expect(arraybuffers.byteEquality(plaintext, plaintext2)).toBe(true);
   });
-  it('AES(key: zeros, iv: f0.61...b5.d1).decrypt(encrypt(0.74...35.68))==0.74...35.68', function() {
+  it('AES(key: zeros, iv: f0.61...b5.d1).decrypt(encrypt(0...68))==0...68', function() {
     var key=new ArrayBuffer(16);
     var iv=arraybuffers.hexStringToArrayBuffer("f0.61.2f.5c.60.92.bc.60.79.e5.6e.e7.a.53.b5.d1");
     var encrypter=new aes.ModeOfOperationCBC(key, iv);
