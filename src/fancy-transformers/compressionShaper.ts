@@ -62,17 +62,16 @@ export class CompressionShaper implements Transformer {
   }
 
   public transform = (buffer:ArrayBuffer) :ArrayBuffer[] => {
-//    buffer=arraybuffers.stringToArrayBuffer('\x00\x01\x02\x03');
-    log.debug('encoding %1', arraybuffers.arrayBufferToHexString(buffer));
+//    log.debug('encoding %1', arraybuffers.arrayBufferToHexString(buffer));
     var encoded=this.encoder_.encode(buffer);
-    log.debug('final encoded %1', arraybuffers.arrayBufferToHexString(encoded));
+//    log.debug('final encoded %1', arraybuffers.arrayBufferToHexString(encoded));
     return [encoded];
   }
 
   public restore = (buffer:ArrayBuffer) :ArrayBuffer[] => {
     var decoded=this.decoder_.decode(buffer);
-    log.debug('final decoded %1', arraybuffers.arrayBufferToHexString(decoded));
-    log.debug('--------------------------------------------------------------');
+//    log.debug('final decoded %1', arraybuffers.arrayBufferToHexString(decoded));
+//    log.debug('--------------------------------------------------------------');
     return [decoded];
   }
 
