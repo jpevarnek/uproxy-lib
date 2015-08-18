@@ -235,12 +235,14 @@ export class Encoder extends Coder {
 
     this.write_(temp & 0xFF);
     this.write_((this.low_ >>> (23-8)) & 0xFF);
+    this.write_((this.output_.length >>> 8) & 0xFF);
+    this.write_((this.output_.length) & 0xFF);
   }
 
   private write_ = (byte:number) :void => {
     this.output_.push(byte);
     if(this.target_[this.output_.length-1]!==byte) {
-      console.log('SYNC ERROR ', this.output_.length-1, this.target_[this.output_.length-1], byte);
+//      console.log('SYNC ERROR ', this.output_.length-1, this.target_[this.output_.length-1], byte);
     }
   }
 }
@@ -252,6 +254,10 @@ export class Decoder extends Coder {
 
   public decode = (input:ArrayBuffer) :ArrayBuffer => {
     this.input_=[];
+
+    var parts=arraybuffers.split(input, input.byteLength-2);
+    var size=arraybuffers.decodeShort(parts[1])-4;
+//    console.log('Size: ', size);
 
     var bytes=new Uint8Array(input);
     for(var index=0; index<bytes.length; index++) {
@@ -267,20 +273,20 @@ export class Decoder extends Coder {
       output[index]=this.output_[index];
     }
 
-    return output.buffer;
+    return arraybuffers.split(output.buffer, size)[0];
   }
 
   private init_ = () :void => {
     // Discard first byte because the encoder is weird.
     var discard=this.input_.shift();
-    log.debug('discarding %1', discard);
+//    log.debug('discarding %1', discard);
     this.working_ = this.input_.shift();
-    log.debug('read %1', this.working_);
+//    log.debug('read %1', this.working_);
     this.low_ = this.working_ >>> (8 - this.extra_bits_);
     this.range_ = 1 << this.extra_bits_;
     this.underflow_ = 0;
     this.output_=[];
-    log.debug('old state %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
+//    log.debug('old state %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
   }
 
   private decodeSymbols_ = () :void => {
@@ -307,9 +313,9 @@ export class Decoder extends Coder {
   }*/
 
   private decodeSymbol_ = () :void => {
-    log.debug('<r %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
+//    log.debug('<r %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
     this.renormalize_();
-    log.debug('>r %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
+//    log.debug('>r %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
     this.underflow_=this.range_ >>> 8;
     var temp=(this.low_/this.underflow_) >>> 0;
     var result :number = null;
@@ -322,7 +328,7 @@ export class Decoder extends Coder {
     this.output_.push(result);
     this.update_(result);
 
-    log.debug('new state %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
+//    log.debug('new state %1 %2 %3 %4', this.low_, this.range_, this.working_, this.underflow_);
   }
 
   private renormalize_ = () :void => {
@@ -333,7 +339,7 @@ export class Decoder extends Coder {
       } else {
         this.working_=0;
       }
-      log.debug('read byte %1', this.working_);
+//      log.debug('read byte %1', this.working_);
       this.low_ = (this.low_ | (this.working_ >>> (8-this.extra_bits_)));
       this.low_ = this.low_ >>> 0;
       this.range_ = (this.range_ << 8) >>> 0;
@@ -342,7 +348,7 @@ export class Decoder extends Coder {
 
   private update_ = (symbol:number) :void => {
     var interval = this.intervals_[symbol];
-    log.debug('decoding %1 %2 %3 %4', symbol, interval.length, interval.low, this.total_);
+//    log.debug('decoding %1 %2 %3 %4', symbol, interval.length, interval.low, this.total_);
     var temp = this.underflow_ * interval.low;
     this.low_ = this.low_ - temp;
     if(interval.high < this.total_) {
