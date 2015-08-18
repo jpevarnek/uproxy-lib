@@ -60,20 +60,20 @@ class PacketLengthShaper {
     } else {
       if (buffer.byteLength + 2 === target) {
         return [
-          arraybuffers.append(arraybuffers.encodeShort(buffer.byteLength),
-          buffer)
+          arraybuffers.assemble([arraybuffers.encodeShort(buffer.byteLength),
+          buffer])
         ];
       } else if (buffer.byteLength + 2 > target) {
         return [
-          arraybuffers.append(arraybuffers.encodeShort(0),
-          this.randomBytes_(target))
+          arraybuffers.assemble([arraybuffers.encodeShort(0),
+          arraybuffers.randomBytes(target)])
         ];
       } else {
         // buffer.byteLength + 2 < target
         var result=arraybuffers.assemble([
           arraybuffers.encodeShort(buffer.byteLength),
           buffer,
-          this.randomBytes_(target-buffer.byteLength-2)
+          arraybuffers.randomBytes(target-buffer.byteLength-2)
         ]);
         return [result];
       }
@@ -116,7 +116,7 @@ class PacketLengthShaper {
       var id=Fragment.randomId();
       var index=0;
       var count=1;
-      var padding=this.randomBytes_(target-(buffer.byteLength+headerLength))
+      var padding=arraybuffers.randomBytes(target-(buffer.byteLength+headerLength))
       var fragment=new Fragment(
         buffer.byteLength,
         id,
