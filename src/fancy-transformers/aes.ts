@@ -253,7 +253,7 @@ export class ModeOfOperationCBC {
       chunks[x]=this.encryptChunk_(chunks[x]);
     }
 
-    return arraybuffers.assemble(chunks);
+    return arraybuffers.concat(chunks);
   }
 
   private encryptChunk_ = (plaintext:ArrayBuffer) :ArrayBuffer => {
@@ -281,7 +281,7 @@ export class ModeOfOperationCBC {
       chunks[x]=this.decryptChunk_(chunks[x]);
     }
 
-    return arraybuffers.assemble(chunks);
+    return arraybuffers.concat(chunks);
   }
 
   private decryptChunk_ = (ciphertext:ArrayBuffer) :ArrayBuffer => {

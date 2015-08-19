@@ -60,17 +60,17 @@ class PacketLengthShaper {
     } else {
       if (buffer.byteLength + 2 === target) {
         return [
-          arraybuffers.assemble([arraybuffers.encodeShort(buffer.byteLength),
+          arraybuffers.concat([arraybuffers.encodeShort(buffer.byteLength),
           buffer])
         ];
       } else if (buffer.byteLength + 2 > target) {
         return [
-          arraybuffers.assemble([arraybuffers.encodeShort(0),
+          arraybuffers.concat([arraybuffers.encodeShort(0),
           arraybuffers.randomBytes(target)])
         ];
       } else {
         // buffer.byteLength + 2 < target
-        var result=arraybuffers.assemble([
+        var result=arraybuffers.concat([
           arraybuffers.encodeShort(buffer.byteLength),
           buffer,
           arraybuffers.randomBytes(target-buffer.byteLength-2)

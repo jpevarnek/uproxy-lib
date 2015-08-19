@@ -61,7 +61,7 @@ export class EncryptionShaper implements Transformer {
     var iv :ArrayBuffer=this.makeIV_();
     var encrypted :ArrayBuffer=this.encrypt_(iv, buffer);
     var parts=[iv, encrypted]
-    return [arraybuffers.assemble(parts)];
+    return [arraybuffers.concat(parts)];
   }
 
   public restore = (buffer:ArrayBuffer) :ArrayBuffer[] => {
@@ -87,10 +87,10 @@ export class EncryptionShaper implements Transformer {
     var remainder = (len.byteLength + buffer.byteLength) % 16;
     var plaintext:ArrayBuffer;
     if (remainder === 0) {
-      plaintext=arraybuffers.assemble([len, buffer]);
+      plaintext=arraybuffers.concat([len, buffer]);
     } else {
       var padding :ArrayBuffer = arraybuffers.randomBytes(16-remainder);
-      plaintext=arraybuffers.assemble([len, buffer, padding]);
+      plaintext=arraybuffers.concat([len, buffer, padding]);
     }
 
     var cbc :aes.ModeOfOperationCBC = new aes.ModeOfOperationCBC(this.key_, iv);

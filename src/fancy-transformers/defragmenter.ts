@@ -59,7 +59,7 @@ class Defragmenter {
       var hexid=this.complete_.pop();
       var fragments=this.tracker_[hexid];
       if(fragments !== null && fragments.length > 0) {
-        var packet = arraybuffers.assemble(fragments);
+        var packet = arraybuffers.concat(fragments);
 //        log.debug('pushing packet %1', packet.byteLength);
         packets.push(packet);
       }

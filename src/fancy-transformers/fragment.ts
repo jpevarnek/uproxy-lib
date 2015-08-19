@@ -110,7 +110,7 @@ class Fragment {
 
   public encodeFragment = () :ArrayBuffer => {
 //    log.info("Encoding %1 %2 %3", this.id, this.index, this.count);
-    return arraybuffers.assemble([
+    return arraybuffers.concat([
       arraybuffers.encodeShort(this.length),
       this.id, encodeByte_(this.index),
       encodeByte_(this.count),

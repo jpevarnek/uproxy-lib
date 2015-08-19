@@ -196,6 +196,6 @@ export class ByteSequenceShaper implements Transformer {
 
     log.debug("parts %1 %2 %3 %4", model, model.sequence, parts[0].byteLength, parts[1].byteLength);
 
-    return arraybuffers.assemble(parts);
+    return arraybuffers.concat(parts);
   }
 }
