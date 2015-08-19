@@ -79,7 +79,9 @@ export class EncryptionShaper implements Transformer {
   }
 
   private makeIV_ = () :ArrayBuffer => {
-    return arraybuffers.randomBytes(16);
+    var randomBytes=new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    return randomBytes.buffer;
   }
 
   private encrypt_ = (iv:ArrayBuffer, buffer:ArrayBuffer) :ArrayBuffer => {
@@ -89,8 +91,9 @@ export class EncryptionShaper implements Transformer {
     if (remainder === 0) {
       plaintext=arraybuffers.concat([len, buffer]);
     } else {
-      var padding :ArrayBuffer = arraybuffers.randomBytes(16-remainder);
-      plaintext=arraybuffers.concat([len, buffer, padding]);
+      var padding = new Uint8Array(16-remainder);
+      crypto.getRandomValues(padding);
+      plaintext=arraybuffers.concat([len, buffer, padding.buffer]);
     }
 
     var cbc :aes.ModeOfOperationCBC = new aes.ModeOfOperationCBC(this.key_, iv);

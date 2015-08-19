@@ -4,9 +4,11 @@
 // e.g.
 //  import Transformer = require('uproxy-obfuscators/transformer');
 /// <reference path='../../../third_party/uTransformers/utransformers.d.ts' />
+/// <reference path='../../../third_party/typings/webcrypto/WebCrypto.d.ts' />
 
 import logging = require('../logging/logging');
 import arraybuffers = require('../arraybuffers/arraybuffers');
+import random = require('../crypto/random');
 
 var log :logging.Log = new logging.Log('fancy-transformers');
 
@@ -181,7 +183,9 @@ export class ByteSequenceShaper implements Transformer {
     if(model.offset>0) {
       log.debug('case 1');
       var length=model.offset;
-      parts.push(arraybuffers.randomBytes(length));
+      var randomBytes=new Uint8Array(length);
+      crypto.getRandomValues(randomBytes);
+      parts.push(randomBytes.buffer);
     }
 
     parts.push(model.sequence);
@@ -191,7 +195,9 @@ export class ByteSequenceShaper implements Transformer {
     if(model.offset<model.length) {
       log.debug('case 2');
       length=model.length-(model.offset+model.sequence.byteLength);
-      parts.push(arraybuffers.randomBytes(length));
+      var randomBytes=new Uint8Array(length);
+      crypto.getRandomValues(randomBytes);
+      parts.push(randomBytes.buffer);
     }
 
     log.debug("parts %1 %2 %3 %4", model, model.sequence, parts[0].byteLength, parts[1].byteLength);

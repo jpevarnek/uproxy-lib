@@ -64,16 +64,22 @@ class PacketLengthShaper {
           buffer])
         ];
       } else if (buffer.byteLength + 2 > target) {
+        var padding=new Uint8Array(target);
+        crypto.getRandomValues(padding);
+
         return [
           arraybuffers.concat([arraybuffers.encodeShort(0),
-          arraybuffers.randomBytes(target)])
+          padding.buffer])
         ];
       } else {
         // buffer.byteLength + 2 < target
+        var padding=new Uint8Array(target-buffer.byteLength-2);
+        crypto.getRandomValues(padding);
+
         var result=arraybuffers.concat([
           arraybuffers.encodeShort(buffer.byteLength),
           buffer,
-          arraybuffers.randomBytes(target-buffer.byteLength-2)
+          padding.buffer
         ]);
         return [result];
       }
@@ -116,14 +122,16 @@ class PacketLengthShaper {
       var id=Fragment.randomId();
       var index=0;
       var count=1;
-      var padding=arraybuffers.randomBytes(target-(buffer.byteLength+headerLength))
+      var padding=new Uint8Array(target-(buffer.byteLength+headerLength));
+      crypto.getRandomValues(padding);
+
       var fragment=new Fragment(
         buffer.byteLength,
         id,
         index,
         count,
         buffer,
-        padding
+        padding.buffer
       );
       return [fragment];
     }
