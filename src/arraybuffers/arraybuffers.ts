@@ -119,25 +119,6 @@ export function stringToUtf8EncodedArrayBuffer(str:string) :ArrayBuffer {
   return ab.buffer;
 }
 
-export function assemble(buffers:ArrayBuffer[]) :ArrayBuffer {
-  var total=0;
-  for(var i=0; i<buffers.length; i++) {
-    total=total+buffers[i].byteLength;
-  }
-
-  var result = new Uint8Array(total);
-  var toIndex=0;
-  for(var i=0; i<buffers.length; i++) {
-    var bytes=new Uint8Array(buffers[i]);
-    for(var fromIndex=0; fromIndex<buffers[i].byteLength; fromIndex++) {
-      result[toIndex]=bytes[fromIndex];
-      toIndex=toIndex+1;
-    }
-  }
-
-  return result.buffer;
-}
-
 export function split(buffer:ArrayBuffer, firstLen:number) :Array<ArrayBuffer> {
   var bytes=new Uint8Array(buffer)
   var lastLen :number = buffer.byteLength-firstLen;
