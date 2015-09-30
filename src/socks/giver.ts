@@ -3,20 +3,20 @@
 
 import getter = require('./getter');
 import logging = require('../logging/logging');
+import middle = require('./middle');
 import net = require('../net/net.types');
 
 const log :logging.Log = new logging.Log('giver');
 
 // The giver, i.e. SOCKS proxy itself.
-// TODO: extract an interface common to this and a WebRTC intermediary
-export class Giver {
+export class Giver implements middle.RemotePeer {
   // Number of instances created, for logging purposes.
   private static id_ = 0;
 
   // Number of connections made so far, for logging purposes.
   private numConnections_ = 0;
 
-  private getter_: getter.Getter;
+  private getter_: middle.RemotePeer;
 
   // Do not call this directly.
   // Use the static constructors.
@@ -25,20 +25,18 @@ export class Giver {
     Giver.id_++;
   }
 
-  // Call this when data has been received from a SOCKS client.
   public handle = (
-      client:net.Endpoint,
+      client:string,
       buffer:ArrayBuffer) => {
     log.info('%1: received %2 bytes from %3', this.name_, buffer.byteLength, client);
   }
 
-  // Call this when the SOCKS client has disconnected, for any reason.
-  public disconnected = (client:net.Endpoint) => {
+  public disconnected = (client:string) => {
     log.debug('%1: disconnected from %2', this.name_, client);
   }
 
   // TODO: figure out a way to remove this (it destroys immutability)
-  public setGetter = (newGetter:getter.Getter) : void => {
+  public setGetter = (newGetter:middle.RemotePeer) : void => {
     this.getter_ = newGetter;
   }
 }
