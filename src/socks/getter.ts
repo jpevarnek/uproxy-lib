@@ -34,8 +34,8 @@ export class Getter implements middle.RemotePeer {
 
   private giver_: middle.RemotePeer;
 
-  // Number of connections made so far, for logging purposes.
-  private numConnections_ = 0;
+  // Keyed by client ID.
+  private connections_:{[id:string]:freedom.TcpSocket.Socket} = {};
 
   // Do not call this directly.
   // Use the static constructors instead.
@@ -59,32 +59,47 @@ export class Getter implements middle.RemotePeer {
   private onConnection_ = (
       connectInfo:freedom.TcpSocket.ConnectInfo) : void => {
     var clientId = connectInfo.host + ':' + connectInfo.port;
-    log.info('%1: connection %2 from %3', this.name_, this.numConnections_++, clientId);
+    log.info('%1: new connection from %2', this.name_, clientId);
 
     var connection :freedom.TcpSocket.Socket =
         freedom['core.tcpsocket'](connectInfo.socket);
 
-    connection.on('onData', (info: freedom.TcpSocket.ReadInfo) => {
+    connection.on('onData', (info:freedom.TcpSocket.ReadInfo) => {
       this.giver_.handle(clientId, info.data);
     });
 
-    connection.on('onDisconnect', (info: freedom.TcpSocket.DisconnectInfo) => {
+    connection.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
       log.info('%1: disconnected from %2', this.name_, clientId);
+      // TODO: does the order of these two statements matter?
+      delete this.connections_[clientId];
       this.giver_.disconnected(clientId);
     });
+
+    this.connections_[clientId] = connection;
   }
 
   public handle = (
-      client:string,
+      clientId:string,
       buffer:ArrayBuffer) => {
-    log.info('%1: received %2 bytes from %3', this.name_, buffer.byteLength, client);
+    log.info('%1: received %2 bytes from %3', this.name_, buffer.byteLength, clientId);
+    if (clientId in this.connections_) {
+      // TODO: be reckless
+      this.connections_[clientId].write(buffer);
+    } else {
+      log.warn('%1: send for unknown client %2', this.name_, clientId);
+    }
   }
 
-  public disconnected = (client:string) => {
-    log.debug('%1: disconnected from %2', this.name_, client);
+  public disconnected = (clientId:string) => {
+    log.debug('%1: disconnected from %2', this.name_, clientId);
+    if (clientId in this.connections_) {
+      this.connections_[clientId].close();
+    } else {
+      log.warn('%1: disconnection for unknown client %2', this.name_, clientId);
+    }
   }
 
-  private onDisconnect_ = (info: freedom.TcpSocket.DisconnectInfo): void => {
+  private onDisconnect_ = (info:freedom.TcpSocket.DisconnectInfo): void => {
     log.error('%1: server socket closed!', this.name_);
   }
 
