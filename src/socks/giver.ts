@@ -97,6 +97,7 @@ class Session {
           this.socket_.connect(request.endpoint.address,
               request.endpoint.port).then(this.socket_.getInfo).then(
               (info:freedom.TcpSocket.SocketInfo) => {
+            log.debug('connected to remote endpoint');
             this.state_ = State.CONNECTED;
             this.send_(headers.composeResponseBuffer({
               reply: headers.Reply.SUCCEEDED,
