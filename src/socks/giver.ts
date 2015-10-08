@@ -47,6 +47,7 @@ export class Giver implements middle.RemotePeer {
   public disconnected = (client:string) => {
     log.debug('%1: disconnected from %2', this.name_, client);
     delete this.sessions_[client];
+    // TODO: tell the session to close its socket
   }
 
   // TODO: figure out a way to remove this (it destroys immutability)
@@ -57,7 +58,9 @@ export class Giver implements middle.RemotePeer {
 
 enum State {
   AWAITING_AUTHS,
-  AWAITING_REQUEST
+  AWAITING_REQUEST,
+  AWAITING_CONNECTION,
+  CONNECTED
 }
 
 class Session {
@@ -76,12 +79,52 @@ class Session {
           this.send_(headers.composeAuthResponse(headers.Auth.NOAUTH));
           this.state_ = State.AWAITING_REQUEST;
         } catch (e) {
-          log.warn('could not accept auths: %1', e.message);
+          log.warn('could not parse auths: %1', e.message);
           this.disconnected_();
         }
         break;
       case State.AWAITING_REQUEST:
-        log.error('processing request not implemented');
+        try {
+          var request = headers.interpretRequestBuffer(buffer);
+
+          // TODO: check for Command.TCP_CONNECT
+          // TODO: check is valid and allowed address
+          log.debug('requested endpoint: %1', request.endpoint);
+          this.state_ = State.AWAITING_CONNECTION;
+
+          // Connect to the endpoint, then reply.
+          // TODO: pause socket immediately
+          var socket :freedom.TcpSocket.Socket = freedom['core.tcpsocket']();
+          socket.connect(request.endpoint.address, request.endpoint.port).then(
+              socket.getInfo).then((info:freedom.TcpSocket.SocketInfo) => {
+            this.state_ = State.CONNECTED;
+            this.send_(headers.composeResponseBuffer({
+              reply: headers.Reply.SUCCEEDED,
+              endpoint: {
+                address: info.localAddress,
+                port: info.localPort
+              }
+            }));
+          }, (e:freedom.Error) => {
+            log.warn('failed to connect to remote endpoint: %1', e);
+            // TODO: implement full raft of error codes
+            this.send_(headers.composeResponseBuffer({
+              reply: headers.Reply.FAILURE
+            }));
+            this.disconnected_();
+          });
+        } catch (e) {
+          log.warn('could not parse request: %1', e.message);
+          this.disconnected_();
+        }
+        break;
+      case State.AWAITING_CONNECTION:
+        // TODO: do we actually care about this case?
+        log.error('client sent data before we connected');
+        this.disconnected_();
+        break;
+      case State.CONNECTED:
+        log.error('data transfer not yet supported');
         this.disconnected_();
         break;
     }
