@@ -44,8 +44,8 @@ export class Giver implements middle.RemotePeer {
 
   public disconnected = (client:string) => {
     log.debug('%1: disconnected from %2', this.name_, client);
+    this.sessions_[client].disconnected();
     delete this.sessions_[client];
-    // TODO: tell the session to close its socket
   }
 
   // TODO: figure out a way to remove this (it destroys immutability)
@@ -58,7 +58,8 @@ enum State {
   AWAITING_AUTHS,
   AWAITING_REQUEST,
   AWAITING_CONNECTION,
-  CONNECTED
+  CONNECTED,
+  DISCONNECTED
 }
 
 class Session {
@@ -79,7 +80,7 @@ class Session {
           this.state_ = State.AWAITING_REQUEST;
         } catch (e) {
           log.warn('could not parse auths: %1', e.message);
-          this.disconnected_();
+          this.disconnected();
         }
         break;
       case State.AWAITING_REQUEST:
@@ -111,7 +112,7 @@ class Session {
             });
             this.socket_.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
               log.info('disconnected');
-              this.disconnected_();
+              this.disconnected();
               // TODO: discard incoming/outgoing data
             });
           }, (e:freedom.Error) => {
@@ -120,22 +121,28 @@ class Session {
             this.send_(headers.composeResponseBuffer({
               reply: headers.Reply.FAILURE
             }));
-            this.disconnected_();
+            this.disconnected();
           });
         } catch (e) {
           log.warn('could not parse request: %1', e.message);
-          this.disconnected_();
+          this.disconnected();
         }
-        break;
-      case State.AWAITING_CONNECTION:
-        // TODO: do we actually care about this case? how could it happen?
-        log.error('client sent data before we connected');
-        this.disconnected_();
         break;
       case State.CONNECTED:
         // TODO: use reckless
         this.socket_.write(buffer);
         break;
+      default:
+        log.warn('bytes received in unexpected state %1', State[this.state_]);
     }
+  }
+
+  public disconnected = () => {
+    log.debug('disconnected (current state: %1)', State[this.state_]);
+    this.state_ = State.DISCONNECTED;
+    if (this.state_ === State.CONNECTED) {
+      this.socket_.close();      
+    }
+    this.disconnected_();
   }
 }
