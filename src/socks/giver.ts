@@ -65,6 +65,7 @@ enum State {
 
 class Session {
   private state_ = State.AWAITING_AUTHS;
+  private socket_ :freedom.TcpSocket.Socket;
 
   constructor(
       private id_:string,
@@ -94,9 +95,10 @@ class Session {
 
           // Connect to the endpoint, then reply.
           // TODO: pause socket immediately
-          var socket :freedom.TcpSocket.Socket = freedom['core.tcpsocket']();
-          socket.connect(request.endpoint.address, request.endpoint.port).then(
-              socket.getInfo).then((info:freedom.TcpSocket.SocketInfo) => {
+          this.socket_ = freedom['core.tcpsocket']();
+          this.socket_.connect(request.endpoint.address,
+              request.endpoint.port).then(this.socket_.getInfo).then(
+              (info:freedom.TcpSocket.SocketInfo) => {
             this.state_ = State.CONNECTED;
             this.send_(headers.composeResponseBuffer({
               reply: headers.Reply.SUCCEEDED,
@@ -105,6 +107,14 @@ class Session {
                 port: info.localPort
               }
             }));
+            this.socket_.on('onData', (info:freedom.TcpSocket.ReadInfo) => {
+              this.send_(info.data);
+            });
+            this.socket_.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
+              log.info('disconnected');
+              this.disconnected_();
+              // TODO: discard incoming/outgoing data
+            });
           }, (e:freedom.Error) => {
             log.warn('failed to connect to remote endpoint: %1', e);
             // TODO: implement full raft of error codes
@@ -119,13 +129,13 @@ class Session {
         }
         break;
       case State.AWAITING_CONNECTION:
-        // TODO: do we actually care about this case?
+        // TODO: do we actually care about this case? how could it happen?
         log.error('client sent data before we connected');
         this.disconnected_();
         break;
       case State.CONNECTED:
-        log.error('data transfer not yet supported');
-        this.disconnected_();
+        // TODO: use reckless
+        this.socket_.write(buffer);
         break;
     }
   }
