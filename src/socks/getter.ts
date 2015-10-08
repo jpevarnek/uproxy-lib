@@ -59,7 +59,7 @@ export class Getter implements middle.RemotePeer {
   private onConnection_ = (
       connectInfo:freedom.TcpSocket.ConnectInfo) : void => {
     var clientId = connectInfo.host + ':' + connectInfo.port;
-    log.info('%1: new connection from %2', this.name_, clientId);
+    log.info('%1: new socket from %2', this.name_, clientId);
 
     var connection :freedom.TcpSocket.Socket =
         freedom['core.tcpsocket'](connectInfo.socket);
@@ -85,21 +85,22 @@ export class Getter implements middle.RemotePeer {
       // TODO: be reckless
       this.connections_[clientId].write(buffer);
     } else {
-      log.warn('%1: send for unknown client %2', this.name_, clientId);
+      log.warn('%1: remote peer sent data for unknown client %2', this.name_, clientId);
     }
   }
 
   public disconnected = (clientId:string) => {
-    log.debug('%1: disconnected from %2', this.name_, clientId);
     if (clientId in this.connections_) {
+      log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
       this.connections_[clientId].close();
     } else {
-      log.warn('%1: disconnection for unknown client %2', this.name_, clientId);
+      log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
     }
   }
 
   private onDisconnect_ = (info:freedom.TcpSocket.DisconnectInfo): void => {
     log.error('%1: server socket closed!', this.name_);
+    // TODO: cleanup (this should almost never happen)
   }
 
   // TODO: figure out a way to remove this (it destroys immutability)

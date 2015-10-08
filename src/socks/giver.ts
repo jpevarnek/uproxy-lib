@@ -30,9 +30,10 @@ export class Giver implements middle.RemotePeer {
       client:string,
       buffer:ArrayBuffer) => {
     // TODO: could bytes arrive after disconnection?
+    //       consider adding a connected event
     if (!(client in this.sessions_)) {
       log.info('%1: new client %2', this.name_, client);
-      this.sessions_[client] = new Session(client, (buffer:ArrayBuffer) => {
+      this.sessions_[client] = new Session(this.name_, client, (buffer:ArrayBuffer) => {
         this.getter_.handle(client, buffer);
       }, () => {
         this.getter_.disconnected(client);
@@ -42,10 +43,14 @@ export class Giver implements middle.RemotePeer {
     session.handle(buffer);
   }
 
-  public disconnected = (client:string) => {
-    log.debug('%1: disconnected from %2', this.name_, client);
-    this.sessions_[client].disconnected();
-    delete this.sessions_[client];
+  public disconnected = (clientId:string) => {
+    if (clientId in this.sessions_) {
+      log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
+      this.sessions_[clientId].disconnected();
+      delete this.sessions_[clientId];
+    } else {
+      log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
+    }
   }
 
   // TODO: figure out a way to remove this (it destroys immutability)
@@ -67,6 +72,7 @@ class Session {
   private socket_ :freedom.TcpSocket.Socket;
 
   constructor(
+      private getterId_:string,
       private id_:string,
       private send_:(buffer:ArrayBuffer) => void,
       private disconnected_:() => void) {}
@@ -79,7 +85,7 @@ class Session {
           this.send_(headers.composeAuthResponse(headers.Auth.NOAUTH));
           this.state_ = State.AWAITING_REQUEST;
         } catch (e) {
-          log.warn('could not parse auths: %1', e.message);
+          log.warn('%1/%2: could not parse auths: %3', this.getterId_, this.id_, e.message);
           this.disconnected();
         }
         break;
@@ -89,7 +95,7 @@ class Session {
 
           // TODO: check for Command.TCP_CONNECT
           // TODO: check is valid and allowed address
-          log.debug('requested endpoint: %1', request.endpoint);
+          log.debug('%1/%2: requested endpoint: %3', this.getterId_, this.id_, request.endpoint);
           this.state_ = State.AWAITING_CONNECTION;
 
           // Connect to the endpoint, then reply.
@@ -98,7 +104,7 @@ class Session {
           this.socket_.connect(request.endpoint.address,
               request.endpoint.port).then(this.socket_.getInfo).then(
               (info:freedom.TcpSocket.SocketInfo) => {
-            log.debug('connected to remote endpoint');
+            log.debug('%1/%2: connected to remote endpoint', this.getterId_, this.id_);
             this.state_ = State.CONNECTED;
             this.send_(headers.composeResponseBuffer({
               reply: headers.Reply.SUCCEEDED,
@@ -111,12 +117,14 @@ class Session {
               this.send_(info.data);
             });
             this.socket_.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
-              log.info('disconnected');
+              log.info('%1/%2: disconnected from remote endpoint: %3',
+                  this.getterId_, this.id_, info);
               this.disconnected();
               // TODO: discard incoming/outgoing data
             });
           }, (e:freedom.Error) => {
-            log.warn('failed to connect to remote endpoint: %1', e);
+            log.warn('%1/%2: failed to connect to remote endpoint: %3',
+                this.getterId_, this.id_, e);
             // TODO: implement full raft of error codes
             this.send_(headers.composeResponseBuffer({
               reply: headers.Reply.FAILURE
@@ -124,7 +132,7 @@ class Session {
             this.disconnected();
           });
         } catch (e) {
-          log.warn('could not parse request: %1', e.message);
+          log.warn('%1/%2: could not parse request: %3', this.getterId_, this.id_, e.message);
           this.disconnected();
         }
         break;
@@ -133,14 +141,15 @@ class Session {
         this.socket_.write(buffer);
         break;
       default:
-        log.warn('bytes received in unexpected state %1', State[this.state_]);
+        log.warn('%1/%2: ignoring bytes unexpectedly received in state %3', this.getterId_, this.id_, State[this.state_]);
     }
   }
 
   public disconnected = () => {
-    log.debug('disconnected (current state: %1)', State[this.state_]);
-    this.state_ = State.DISCONNECTED;
+    log.debug('%1/%2: terminating (current state: %3)',
+        this.getterId_, this.id_, State[this.state_]);
     if (this.state_ === State.CONNECTED) {
+      this.state_ = State.DISCONNECTED;
       this.socket_.close();      
     }
     this.disconnected_();

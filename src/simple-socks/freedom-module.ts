@@ -18,8 +18,8 @@ const socksEndpoint: net.Endpoint = {
   port: 9999
 };
 
-getter.fromEndpoint(socksEndpoint).then((myGetter:getter.Getter) => {
-  const myGiver = new giver.Giver();
+getter.fromEndpoint(socksEndpoint, 'getter').then((myGetter:getter.Getter) => {
+  const myGiver = new giver.Giver('giver');
 
   myGiver.setGetter(myGetter);
   myGetter.setGiver(myGiver);
