@@ -29,8 +29,6 @@ export class Giver implements middle.RemotePeer {
   public handle = (
       client:string,
       buffer:ArrayBuffer) => {
-    log.debug('%1: received %2 bytes from %3', this.name_, buffer.byteLength, client);
-
     // TODO: could bytes arrive after disconnection?
     if (!(client in this.sessions_)) {
       log.info('%1: new client %2', this.name_, client);

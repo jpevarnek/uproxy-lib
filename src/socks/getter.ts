@@ -81,7 +81,6 @@ export class Getter implements middle.RemotePeer {
   public handle = (
       clientId:string,
       buffer:ArrayBuffer) => {
-    log.info('%1: received %2 bytes from %3', this.name_, buffer.byteLength, clientId);
     if (clientId in this.connections_) {
       // TODO: be reckless
       this.connections_[clientId].write(buffer);
