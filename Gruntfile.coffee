@@ -108,6 +108,7 @@ taskManager.add 'browserifySpecs', [
   'browserify:onetimeSpec'
   'browserify:candidateSpec'
   'browserify:churnSpec'
+  'browserify:getterSpec'
   'browserify:handlerSpec'
   'browserify:buildToolsTaskmanagerSpec'
   'browserify:loggingSpec'
@@ -150,6 +151,7 @@ taskManager.add 'unit_test', [
   'jasmine:loggingProvider'
   'jasmine:net'
   'jasmine:pool'
+  'jasmine:socks'
   'jasmine:webrtc'
   'jasmine:queue'
 ]
@@ -493,6 +495,7 @@ module.exports = (grunt) ->
       rtcToNetCov: Rule.addCoverageToSpec(Rule.jasmineSpec 'rtc-to-net')
       simpleTransformers: Rule.jasmineSpec 'simple-transformers'
       simpleTransformersCov: Rule.addCoverageToSpec(Rule.jasmineSpec 'simple-transformers')
+      socks: Rule.jasmineSpec 'socks'
       turnFrontEndMessagesSpec: Rule.browserifySpec 'turn-frontend/messages'
       turnFrontEndSpec: Rule.browserifySpec 'turn-frontend/turn-frontend'
 
@@ -548,6 +551,7 @@ module.exports = (grunt) ->
       candidateCovSpec: Rule.addCoverageToBrowserify(Rule.browserifySpec 'churn/candidate')
       churnSpec: Rule.browserifySpec 'churn/churn'
       churnCovSpec: Rule.addCoverageToBrowserify(Rule.browserifySpec 'churn/churn')
+      getterSpec: Rule.browserifySpec 'socks/getter'
       handlerSpec: Rule.browserifySpec 'handler/queue'
       handlerCovSpec: Rule.addCoverageToBrowserify(Rule.browserifySpec 'handler/queue')
       loggingProviderSpec: Rule.browserifySpec 'loggingprovider/loggingprovider'

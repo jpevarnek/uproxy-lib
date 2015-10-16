@@ -15,7 +15,7 @@ export function fromEndpoint(
     endpoint:net.Endpoint,
     name?:string)
     :Promise<Getter> {
-  var getter = new Getter(endpoint, name);
+  var getter = new Getter(freedom['core.tcpsocket'](), endpoint, name);
   return getter.listen().then(() => {
     return getter;
   });
@@ -30,8 +30,6 @@ export class Getter implements middle.RemotePeer {
   // Number of instances created, for logging purposes.
   private static id_ = 0;
 
-  private socket_: freedom.TcpSocket.Socket = freedom['core.tcpsocket']();
-
   private giver_: middle.RemotePeer;
 
   // Keyed by client ID.
@@ -40,7 +38,8 @@ export class Getter implements middle.RemotePeer {
   // Do not call this directly.
   // Use the static constructors instead.
   constructor(
-      private requestedEndpoint_:net.Endpoint,
+      private socket_: freedom.TcpSocket.Socket,
+      private requestedEndpoint_: net.Endpoint,
       private name_ :string = 'unnamed-getter-' + Getter.id_) {
     Getter.id_++;
 
