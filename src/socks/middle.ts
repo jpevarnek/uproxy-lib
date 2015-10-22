@@ -2,6 +2,9 @@
 /// <reference path='../../../third_party/typings/freedom/freedom-module-env.d.ts' />
 
 export interface RemotePeer {
+  // Call this when a new connection has been made to the remote peer.
+  connected(client: string): void;
+
   // Call this when data has been received from the remote peer.
   handle(
       client:string,

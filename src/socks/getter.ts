@@ -60,6 +60,8 @@ export class Getter implements middle.RemotePeer {
     var clientId = connectInfo.host + ':' + connectInfo.port;
     log.info('%1: new socket from %2', this.name_, clientId);
 
+    this.giver_.connected(clientId);
+
     var connection :freedom.TcpSocket.Socket =
         freedom['core.tcpsocket'](connectInfo.socket);
 
@@ -105,5 +107,9 @@ export class Getter implements middle.RemotePeer {
   // TODO: figure out a way to remove this (it destroys immutability)
   public setGiver = (newGiver:middle.RemotePeer) : void => {
     this.giver_ = newGiver;
+  }
+
+  public connected = (client:string) => {
+    throw new Error('unimplemented');
   }
 }

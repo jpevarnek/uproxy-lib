@@ -26,21 +26,29 @@ export class Giver implements middle.RemotePeer {
     Giver.id_++;
   }
 
+  public connected = (client: string) => {
+    if (client in this.sessions_) {
+      log.warn('%1: client %2 already connected', this.name_, client);
+      return;
+    }
+
+    log.info('%1: new client %2', this.name_, client);
+    this.sessions_[client] = new Session(this.name_, client, (buffer: ArrayBuffer) => {
+      this.getter_.handle(client, buffer);
+    }, () => {
+      this.getter_.disconnected(client);
+    });
+  }
+
   public handle = (
       client:string,
       buffer:ArrayBuffer) => {
-    // TODO: could bytes arrive after disconnection?
-    //       consider adding a connected event
     if (!(client in this.sessions_)) {
-      log.info('%1: new client %2', this.name_, client);
-      this.sessions_[client] = new Session(this.name_, client, (buffer:ArrayBuffer) => {
-        this.getter_.handle(client, buffer);
-      }, () => {
-        this.getter_.disconnected(client);
-      });
+      log.warn('%1: handle called for unknown client %2', this.name_, client);
+      return;
     }
-    var session = this.sessions_[client];
-    session.handle(buffer);
+
+    this.sessions_[client].handle(buffer);
   }
 
   public disconnected = (clientId:string) => {
