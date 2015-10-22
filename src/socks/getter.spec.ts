@@ -30,8 +30,8 @@ describe('getter', function() {
     });
 
     var myGetter = new getter.Getter(
-        mockServerSocket as any as freedom.TcpSocket.Socket,
-        sampleEndpoint);
+          mockServerSocket as any as freedom.TcpSocket.Socket,
+          sampleEndpoint);
 
     myGetter.setGiver(<middle.RemotePeer>{
       connected: (client:string) => {
@@ -48,4 +48,36 @@ describe('getter', function() {
       socket: 1
     });
   });
+
+  it('notifies giver of disconnection', (done) => {
+    freedom = freedomMocker.makeMockFreedomInModuleEnv({
+      'core.tcpsocket': () => { return mockClientSocket; }
+    });
+
+    var myGetter = new getter.Getter(
+        mockServerSocket as any as freedom.TcpSocket.Socket,
+        sampleEndpoint);
+
+    myGetter.setGiver(<middle.RemotePeer>{
+      connected: (client: string) => {
+        mockClientSocket.handleEvent('onDisconnect', <freedom.TcpSocket.DisconnectInfo>{
+          errcode: 'none',
+          message: 'none'
+        });
+      },
+      handle: (client: string, buffer: ArrayBuffer) => { },
+      disconnected: (client: string) => {
+        expect(client).toEqual('127.0.0.1:55000');
+        done();
+      }
+    });
+
+    mockServerSocket.handleEvent('onConnection', <freedom.TcpSocket.ConnectInfo>{
+      host: '127.0.0.1',
+      port: 55000,
+      socket: 1
+    });
+  });
+
+  // TODO: check we do not notify the giver of disconnection when *it* has already informed us
 });

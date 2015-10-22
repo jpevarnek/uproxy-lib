@@ -60,8 +60,6 @@ export class Getter implements middle.RemotePeer {
     var clientId = connectInfo.host + ':' + connectInfo.port;
     log.info('%1: new socket from %2', this.name_, clientId);
 
-    this.giver_.connected(clientId);
-
     var connection :freedom.TcpSocket.Socket =
         freedom['core.tcpsocket'](connectInfo.socket);
 
@@ -71,12 +69,13 @@ export class Getter implements middle.RemotePeer {
 
     connection.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
       log.info('%1: disconnected from %2', this.name_, clientId);
-      // TODO: does the order of these two statements matter?
       delete this.connections_[clientId];
       this.giver_.disconnected(clientId);
     });
 
     this.connections_[clientId] = connection;
+
+    this.giver_.connected(clientId);
   }
 
   public handle = (
