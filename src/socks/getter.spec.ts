@@ -8,6 +8,7 @@ freedom = freedomMocker.makeMockFreedomInModuleEnv();
 import getter = require('./getter');
 import middle = require('./middle');
 import MockFreedomEventHandler = require('../freedom/mocks/mock-eventhandler');
+import MockFreedomTcpSocket = require('../freedom/mocks/mock-tcpsocket');
 import net = require('../net/net.types');
 
 var sampleEndpoint :net.Endpoint = {
@@ -16,23 +17,25 @@ var sampleEndpoint :net.Endpoint = {
 };
 
 describe('getter', function() {
-  var mockServerSocket: MockFreedomEventHandler;
-  var mockClientSocket: MockFreedomEventHandler;
+  var mockServerSocket: MockFreedomTcpSocket;
+  var mockClientSocket: MockFreedomTcpSocket;
+
+  var myGetter: getter.Getter;
 
   beforeEach(function() {
-    mockServerSocket = new MockFreedomEventHandler(['onConnection', 'onDisconnect']);
-    mockClientSocket = new MockFreedomEventHandler(['onData', 'onDisconnect']);
-  });
+    mockServerSocket = new MockFreedomTcpSocket();
+    mockClientSocket = new MockFreedomTcpSocket();
 
-  it('notifies giver of new connections', (done) => {
     freedom = freedomMocker.makeMockFreedomInModuleEnv({
       'core.tcpsocket': () => { return mockClientSocket; }
     });
 
-    var myGetter = new getter.Getter(
-          mockServerSocket as any as freedom.TcpSocket.Socket,
-          sampleEndpoint);
+    myGetter = new getter.Getter(
+      mockServerSocket as any as freedom.TcpSocket.Socket,
+      sampleEndpoint);
+  });
 
+  it('notifies giver of new connections', (done) => {
     myGetter.setGiver(<middle.RemotePeer>{
       connected: (client:string) => {
         expect(client).toEqual('127.0.0.1:55000');
@@ -49,15 +52,8 @@ describe('getter', function() {
     });
   });
 
+  // TODO: fail if getter calls close on the client connection
   it('notifies giver of disconnection', (done) => {
-    freedom = freedomMocker.makeMockFreedomInModuleEnv({
-      'core.tcpsocket': () => { return mockClientSocket; }
-    });
-
-    var myGetter = new getter.Getter(
-        mockServerSocket as any as freedom.TcpSocket.Socket,
-        sampleEndpoint);
-
     myGetter.setGiver(<middle.RemotePeer>{
       connected: (client: string) => {
         mockClientSocket.handleEvent('onDisconnect', <freedom.TcpSocket.DisconnectInfo>{
@@ -79,5 +75,22 @@ describe('getter', function() {
     });
   });
 
-  // TODO: check we do not notify the giver of disconnection when *it* has already informed us
+  // TODO: fail if getter notifies the giver of disconnection
+  it('handles remote disconnection', (done) => {
+    myGetter.setGiver(<middle.RemotePeer>{
+      connected: (client: string) => {
+        myGetter.disconnected(client);
+      },
+      handle: (client: string, buffer: ArrayBuffer) => {},
+      disconnected: (client: string) => {}
+    });
+
+    var closeSpy = spyOn(mockClientSocket, 'close').and.callFake(done);
+
+    mockServerSocket.handleEvent('onConnection', <freedom.TcpSocket.ConnectInfo>{
+      host: '127.0.0.1',
+      port: 55000,
+      socket: 1
+    });
+  });
 });
