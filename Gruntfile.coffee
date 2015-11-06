@@ -12,6 +12,7 @@ taskManager.add 'base', [
   'ts:srcInCoreEnv'
   'browserify:loggingProvider'
   'browserify:churnPipeFreedomModule'
+  'browserify:cloudSocialProviderFreedomModule'
 ]
 
 taskManager.add 'samples', [
@@ -97,6 +98,7 @@ taskManager.add 'zork', [
   'browserify:zorkFreedomModule'
   'copy:libsForZorkChromeApp'
   'copy:libsForZorkFirefoxApp'
+  'copy:libsForZorkNode'
 ]
 
 # Create unit test code
@@ -287,6 +289,15 @@ module.exports = (grunt) ->
             'freedom-port-control'
           ]
           localDestPath: 'samples/zork-firefoxapp/data/'
+      libsForZorkNode:
+        Rule.copyLibs
+          npmLibNames: ['freedom-for-node']
+          pathsFromDevBuild: ['churn-pipe', 'loggingprovider', 'zork']
+          pathsFromThirdPartyBuild: [
+            'uproxy-obfuscators',
+            'freedom-port-control'
+          ]
+          localDestPath: 'samples/zork-node/'
 
       libsForEchoServerChromeApp:
         Rule.copyLibs
@@ -528,6 +539,17 @@ module.exports = (grunt) ->
       copypasteChatFreedomModule: Rule.browserify 'copypaste-chat/freedom-module'
       copypasteSocksFreedomModule: Rule.browserify 'copypaste-socks/freedom-module'
       echoServerFreedomModule: Rule.browserify 'echo/freedom-module'
+      cloudSocialProviderFreedomModule: Rule.browserify('cloud/social/freedom-module', {
+        alias : [
+          # Shims for node's dns and net modules from freedom-social-xmpp,
+          # with a couple of fixes.
+          './src/cloud/social/shim/net.js:net'
+          './src/cloud/social/shim/dns.js:dns'
+          # Subset of ssh2-streams (all except SFTP) which works well in
+          # the browser.
+          './src/cloud/social/alias/ssh2-streams.js:ssh2-streams'
+        ]
+      })
       simpleChatFreedomModule: Rule.browserify 'simple-chat/freedom-module'
       simpleSocksFreedomModule: Rule.browserify 'simple-socks/freedom-module'
       simpleTurnFreedomModule: Rule.browserify 'simple-turn/freedom-module'
