@@ -56,6 +56,9 @@ export class Giver implements middle.RemotePeer {
       log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
       this.sessions_[clientId].disconnected();
       delete this.sessions_[clientId];
+      // TODO: stop receiving data from the socket
+      //       because we cannot forward it to the getter
+      //       and there could be a huge backlog
     } else {
       log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
     }
@@ -85,7 +88,11 @@ class Session {
       private send_:(buffer:ArrayBuffer) => void,
       private disconnected_:() => void) {}
 
-  public handle = (buffer:ArrayBuffer) => {
+  private onData_ = (info: freedom.TcpSocket.ReadInfo) => {
+    this.send_(info.data);
+  }
+
+  public handle = (buffer: ArrayBuffer) => {
     switch (this.state_) {
       case State.AWAITING_AUTHS:
         try {
@@ -121,14 +128,13 @@ class Session {
                 port: info.localPort
               }
             }));
-            this.socket_.on('onData', (info:freedom.TcpSocket.ReadInfo) => {
-              this.send_(info.data);
-            });
+            this.socket_.on('onData', this.onData_);
             this.socket_.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
               log.info('%1/%2: disconnected from remote endpoint: %3',
                   this.getterId_, this.id_, info);
+              // TODO: use counter, to guard against early onDisconnect notifications
+              this.socket_.off('onData', this.onData_);
               this.disconnected();
-              // TODO: discard incoming/outgoing data
             });
           }, (e:freedom.Error) => {
             log.warn('%1/%2: failed to connect to remote endpoint: %3',

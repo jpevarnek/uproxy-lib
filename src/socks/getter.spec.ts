@@ -93,4 +93,6 @@ describe('getter', function() {
       socket: 1
     });
   });
+
+  // TODO: verify off is called on remote disconnection
 });

@@ -33,7 +33,7 @@ export class Getter implements middle.RemotePeer {
   private giver_: middle.RemotePeer;
 
   // Keyed by client ID.
-  private connections_:{[id:string]:freedom.TcpSocket.Socket} = {};
+  private connections_:{[id:string]:Session} = {};
 
   // Do not call this directly.
   // Use the static constructors instead.
@@ -63,17 +63,11 @@ export class Getter implements middle.RemotePeer {
     var connection :freedom.TcpSocket.Socket =
         freedom['core.tcpsocket'](connectInfo.socket);
 
-    connection.on('onData', (info:freedom.TcpSocket.ReadInfo) => {
-      this.giver_.handle(clientId, info.data);
-    });
-
-    connection.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
-      log.info('%1: disconnected from %2', this.name_, clientId);
-      delete this.connections_[clientId];
+    this.connections_[clientId] = new Session(this.name_, clientId, connection, (buffer: ArrayBuffer) => {
+      this.giver_.handle(clientId, buffer);
+    }, () => {
       this.giver_.disconnected(clientId);
     });
-
-    this.connections_[clientId] = connection;
 
     this.giver_.connected(clientId);
   }
@@ -82,8 +76,7 @@ export class Getter implements middle.RemotePeer {
       clientId:string,
       buffer:ArrayBuffer) => {
     if (clientId in this.connections_) {
-      // TODO: be reckless
-      this.connections_[clientId].write(buffer);
+      this.connections_[clientId].handle(buffer);
     } else {
       log.warn('%1: remote peer sent data for unknown client %2', this.name_, clientId);
     }
@@ -92,7 +85,7 @@ export class Getter implements middle.RemotePeer {
   public disconnected = (clientId:string) => {
     if (clientId in this.connections_) {
       log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
-      this.connections_[clientId].close();
+      this.connections_[clientId].disconnected();
     } else {
       log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
     }
@@ -110,5 +103,37 @@ export class Getter implements middle.RemotePeer {
 
   public connected = (client:string) => {
     throw new Error('unimplemented');
+  }
+}
+
+class Session {
+  constructor(
+      private getterId_: string,
+      private id_: string,
+      private socket_: freedom.TcpSocket.Socket,
+      private send_: (buffer: ArrayBuffer) => void,
+      private disconnected_: () => void) {
+    this.socket_.on('onData', this.onData_);
+
+    this.socket_.on('onDisconnect', (info: freedom.TcpSocket.DisconnectInfo) => {
+      log.info('%1/%2: disconnected', this.getterId_, this.id_);
+      // TODO: use counter, to guard against early onDisconnect notifications
+      freedom['core.tcpsocket'].close(this.socket_);
+      this.disconnected_();
+    });
+  }
+
+  private onData_ = (info: freedom.TcpSocket.ReadInfo) => {
+    this.send_(info.data);
+  }
+
+  public handle = (buffer: ArrayBuffer) => {
+    // TODO: be reckless
+    this.socket_.write(buffer);
+  }
+
+  public disconnected = () => {
+    this.socket_.off('onData', this.onData_);
+    this.socket_.close();
   }
 }
