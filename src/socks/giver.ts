@@ -54,8 +54,9 @@ export class Giver implements middle.RemotePeer {
   public disconnected = (clientId:string) => {
     if (clientId in this.sessions_) {
       log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
-      this.sessions_[clientId].disconnected();
+      var session = this.sessions_[clientId];
       delete this.sessions_[clientId];
+      session.disconnected();
       // TODO: stop receiving data from the socket
       //       because we cannot forward it to the getter
       //       and there could be a huge backlog
