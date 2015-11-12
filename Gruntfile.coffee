@@ -19,6 +19,7 @@ taskManager.add 'samples', [
   'echoServer'
   'copypasteChat'
   'copypasteSocks'
+  'keys'
   'simpleChat'
   'simpleSocks'
   'simpleTurn'
@@ -61,6 +62,12 @@ taskManager.add 'copypasteSocks', [
   'vulcanize:copypasteSocks'
   'copy:libsForCopyPasteSocksChromeApp'
   'copy:libsForCopyPasteSocksFirefoxApp'
+]
+
+taskManager.add 'keys', [
+  'base'
+  'browserify:keysFreedomModule'
+  'copy:libsForKeysChromeApp'
 ]
 
 taskManager.add 'simpleChat', [
@@ -362,6 +369,12 @@ module.exports = (grunt) ->
           ]
           localDestPath: 'samples/copypaste-socks-firefoxapp/data'
 
+      libsForKeysChromeApp:
+        Rule.copyLibs
+          npmLibNames: ['freedom-for-chrome']
+          pathsFromDevBuild: ['keys', 'loggingprovider']
+          localDestPath: 'samples/keys-chromeapp/'
+
       libsForSimpleSocksChromeApp:
         Rule.copyLibs
           npmLibNames: ['freedom-for-chrome']
@@ -537,6 +550,17 @@ module.exports = (grunt) ->
       copypasteSocksFreedomModule: Rule.browserify 'copypaste-socks/freedom-module'
       echoServerFreedomModule: Rule.browserify 'echo/freedom-module'
       cloudSocialProviderFreedomModule: Rule.browserify('cloud/social/freedom-module', {
+        alias : [
+          # Shims for node's dns and net modules from freedom-social-xmpp,
+          # with a couple of fixes.
+          './src/cloud/social/shim/net.js:net'
+          './src/cloud/social/shim/dns.js:dns'
+          # Subset of ssh2-streams (all except SFTP) which works well in
+          # the browser.
+          './src/cloud/social/alias/ssh2-streams.js:ssh2-streams'
+        ]
+      })
+      keysFreedomModule: Rule.browserify('keys/freedom-module', {
         alias : [
           # Shims for node's dns and net modules from freedom-social-xmpp,
           # with a couple of fixes.
