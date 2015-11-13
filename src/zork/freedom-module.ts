@@ -69,6 +69,7 @@ var sendReply = (message:string, connection:tcp.Connection) : void => {
 // to a SocksTotc or RtcToNet instance (and further input is treated as
 // signalling channel messages).
 function serveConnection(connection :tcp.Connection) :void {
+  var bridgeName:string;
   var transformerName:string;
   var transformerConfig:string;
   let recvBuffer :ArrayBuffer = new ArrayBuffer(0);
@@ -95,7 +96,7 @@ function serveConnection(connection :tcp.Connection) :void {
       let keepParsing = false;
       switch (verb) {
         case 'get':
-          get(connection, (transformerName || transformerConfig) ? {
+          get(connection, bridgeName, (transformerName || transformerConfig) ? {
             name: transformerName,
             config: transformerConfig
           } : undefined);
@@ -136,6 +137,23 @@ function serveConnection(connection :tcp.Connection) :void {
           }
           keepParsing = true;
           break;
+        case 'bridge':
+          // bridge with <static constructor name>, e.g.:
+          //   bridge with preObfuscation
+          if (words.length > 2) {
+            var preposition = words[1].trim().toLowerCase();
+            switch (preposition) {
+              case 'with':
+                bridgeName = words[2].trim();
+                break;
+              default:
+                sendReply('usage: bridge with name', connection);
+            }
+          } else {
+            sendReply('usage: bridge with name', connection);
+          }
+          keepParsing = true;
+          break;
         case 'xyzzy':
           sendReply('Nothing happens.', connection);
           keepParsing = true;
@@ -171,6 +189,7 @@ function serveConnection(connection :tcp.Connection) :void {
 // connection.
 function get(
     connection:tcp.Connection,
+    bridgeName:string,
     transformerConfig:churn_types.TransformerConfig)
     :void {
   var socksToRtc = new socks_to_rtc.SocksToRtc();
@@ -180,8 +199,23 @@ function get(
     sendReply(JSON.stringify(signal), connection);
   });
 
-  socksToRtc.start(new tcp.Server(socksEndpoint), bridge.best('sockstortc',
-      pcConfig, undefined, transformerConfig)).then((endpoint:net.Endpoint) => {
+  // Super messy...but I couldn't think of a better way.
+  var myBridge :bridge.BridgingPeerConnection;
+  if (bridgeName === undefined) {
+    myBridge = bridge.best('sockstortc', pcConfig, undefined, transformerConfig);
+  } else if (bridgeName === 'preObfuscation') {
+    myBridge = bridge.preObfuscation('sockstortc', pcConfig);
+  } else if (bridgeName === 'basicObfuscation') {
+    myBridge = bridge.basicObfuscation('sockstortc', pcConfig, undefined, transformerConfig);
+  } else if (bridgeName === 'holographicIceOnly') {
+    myBridge = bridge.holographicIceOnly('sockstortc', pcConfig, undefined, transformerConfig);
+  } else {
+    log.error('unknown bridge name %1', bridgeName);
+    connection.close();
+    return;
+  }
+
+  socksToRtc.start(new tcp.Server(socksEndpoint), myBridge).then((endpoint:net.Endpoint) => {
     log.info('SocksToRtc listening on %1', endpoint);
     log.info('curl -x socks5h://%1:%2 www.example.com',
         endpoint.address, endpoint.port);
