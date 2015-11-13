@@ -36,7 +36,9 @@ export class Giver implements middle.RemotePeer {
     this.sessions_[client] = new Session(this.name_, client, (buffer: ArrayBuffer) => {
       this.getter_.handle(client, buffer);
     }, () => {
-      this.getter_.disconnected(client);
+      if (client in this.sessions_) {
+        this.getter_.disconnected(client);
+      }
     });
   }
 
@@ -52,17 +54,14 @@ export class Giver implements middle.RemotePeer {
   }
 
   public disconnected = (clientId:string) => {
-    if (clientId in this.sessions_) {
-      log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
-      var session = this.sessions_[clientId];
-      delete this.sessions_[clientId];
-      session.disconnected();
-      // TODO: stop receiving data from the socket
-      //       because we cannot forward it to the getter
-      //       and there could be a huge backlog
-    } else {
+    if (!(clientId in this.sessions_)) {
       log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
     }
+    
+    log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
+    var session = this.sessions_[clientId];
+    delete this.sessions_[clientId];
+    session.disconnected();
   }
 
   // TODO: figure out a way to remove this (it destroys immutability)
@@ -133,8 +132,6 @@ class Session {
             this.socket_.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
               log.info('%1/%2: disconnected from remote endpoint: %3',
                   this.getterId_, this.id_, info);
-              // TODO: use counter, to guard against early onDisconnect notifications
-              this.socket_.off('onData', this.onData_);
               this.disconnected();
             });
           }, (e:freedom.Error) => {
@@ -165,6 +162,8 @@ class Session {
         this.getterId_, this.id_, State[this.state_]);
     if (this.state_ === State.CONNECTED) {
       this.state_ = State.DISCONNECTED;
+      // TODO: use counter, to guard against early onDisconnect notifications
+      this.socket_.off('onData', this.onData_);
       this.socket_.close();      
     }
     this.disconnected_();

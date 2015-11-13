@@ -66,8 +66,9 @@ export class Getter implements middle.RemotePeer {
     this.connections_[clientId] = new Session(this.name_, clientId, connection, (buffer: ArrayBuffer) => {
       this.giver_.handle(clientId, buffer);
     }, () => {
-      // TODO: check clientId in connections...if not, we've already been notified
-      this.giver_.disconnected(clientId);
+      if (clientId in this.connections_) {
+        this.giver_.disconnected(clientId);
+      }
     });
 
     this.giver_.connected(clientId);
@@ -84,14 +85,14 @@ export class Getter implements middle.RemotePeer {
   }
 
   public disconnected = (clientId:string) => {
-    if (clientId in this.connections_) {
-      log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
-      var session = this.connections_[clientId];
-      delete this.connections_[clientId];
-      session.disconnected();
-    } else {
+    if (!(clientId in this.connections_)) {
       log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
     }
+    
+    log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
+    var session = this.connections_[clientId];
+    delete this.connections_[clientId];
+    session.disconnected();
   }
 
   private onDisconnect_ = (info:freedom.TcpSocket.DisconnectInfo): void => {
