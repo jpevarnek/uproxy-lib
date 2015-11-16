@@ -67,27 +67,27 @@ export class Getter implements middle.RemotePeer {
         freedom['core.tcpsocket'](connectInfo.socket);
 
     this.connections_[clientId] = new Session(this.name_, clientId, connection, (buffer: ArrayBuffer) => {
-      this.giver_.handle(clientId, buffer);
+      this.giver_.onRemoteData(clientId, buffer);
     }, () => {
       if (clientId in this.connections_) {
-        this.giver_.disconnected(clientId);
+        this.giver_.onRemoteDisconnect(clientId);
       }
     });
 
-    this.giver_.connected(clientId);
+    this.giver_.onRemoteConnect(clientId);
   }
 
-  public handle = (
+  public onRemoteData = (
       clientId:string,
       buffer:ArrayBuffer) => {
     if (clientId in this.connections_) {
-      this.connections_[clientId].handle(buffer);
+      this.connections_[clientId].onRemoteData(buffer);
     } else {
       log.warn('%1: remote peer sent data for unknown client %2', this.name_, clientId);
     }
   }
 
-  public disconnected = (clientId:string) => {
+  public onRemoteDisconnect = (clientId:string) => {
     if (!(clientId in this.connections_)) {
       log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
     }
@@ -95,7 +95,7 @@ export class Getter implements middle.RemotePeer {
     log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
     var session = this.connections_[clientId];
     delete this.connections_[clientId];
-    session.disconnected();
+    session.onRemoteDisconnect();
   }
 
   private onDisconnect_ = (info:freedom.TcpSocket.DisconnectInfo): void => {
@@ -108,7 +108,7 @@ export class Getter implements middle.RemotePeer {
     this.giver_ = newGiver;
   }
 
-  public connected = (client:string) => {
+  public onRemoteConnect = (client:string) => {
     throw new Error('unimplemented');
   }
 }
@@ -134,12 +134,12 @@ class Session {
     this.send_(info.data);
   }
 
-  public handle = (buffer: ArrayBuffer) => {
+  public onRemoteData = (buffer: ArrayBuffer) => {
     // TODO: be reckless
     this.socket_.write(buffer);
   }
 
-  public disconnected = () => {
+  public onRemoteDisconnect = () => {
     this.socket_.off('onData', this.onData_);
     this.socket_.close();
   }

@@ -2,14 +2,14 @@
 /// <reference path='../../../third_party/typings/freedom/freedom-module-env.d.ts' />
 
 export interface RemotePeer {
-  // Call this when a new connection has been made to the remote peer.
-  connected(client: string): void;
+  // Invoked when a new connection has been made to the remote peer.
+  onRemoteConnect(clientId: string): void;
 
-  // Call this when data has been received from the remote peer.
-  handle(
-      client:string,
+  // Invoked when the remote peer has received data.
+  onRemoteData(
+      clientId:string,
       buffer:ArrayBuffer) : void;
 
-  // Call this when we've been disconnected from the remote peer, for any reason.
-  disconnected(client:string): void;
+  // Invoked when the remote peer has been disconnected from the client.
+  onRemoteDisconnect(clientId:string): void;
 }

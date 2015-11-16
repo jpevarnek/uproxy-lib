@@ -26,7 +26,7 @@ export class Giver implements middle.RemotePeer {
     Giver.id_++;
   }
 
-  public connected = (client: string) => {
+  public onRemoteConnect = (client: string) => {
     if (client in this.sessions_) {
       log.warn('%1: client %2 already connected', this.name_, client);
       return;
@@ -34,15 +34,15 @@ export class Giver implements middle.RemotePeer {
 
     log.info('%1: new client %2', this.name_, client);
     this.sessions_[client] = new Session(this.name_, client, (buffer: ArrayBuffer) => {
-      this.getter_.handle(client, buffer);
+      this.getter_.onRemoteData(client, buffer);
     }, () => {
       if (client in this.sessions_) {
-        this.getter_.disconnected(client);
+        this.getter_.onRemoteDisconnect(client);
       }
     });
   }
 
-  public handle = (
+  public onRemoteData = (
       client:string,
       buffer:ArrayBuffer) => {
     if (!(client in this.sessions_)) {
@@ -50,10 +50,10 @@ export class Giver implements middle.RemotePeer {
       return;
     }
 
-    this.sessions_[client].handle(buffer);
+    this.sessions_[client].onRemoteData(buffer);
   }
 
-  public disconnected = (clientId:string) => {
+  public onRemoteDisconnect = (clientId:string) => {
     if (!(clientId in this.sessions_)) {
       log.warn('%1: remote peer disconnected from unknown client %2', this.name_, clientId);
     }
@@ -61,7 +61,7 @@ export class Giver implements middle.RemotePeer {
     log.debug('%1: remote peer disconnected from %2', this.name_, clientId);
     var session = this.sessions_[clientId];
     delete this.sessions_[clientId];
-    session.disconnected();
+    session.onRemoteDisconnect();
   }
 
   // TODO: figure out a way to remove this (it destroys immutability)
@@ -92,7 +92,7 @@ class Session {
     this.send_(info.data);
   }
 
-  public handle = (buffer: ArrayBuffer) => {
+  public onRemoteData = (buffer: ArrayBuffer) => {
     switch (this.state_) {
       case State.AWAITING_AUTHS:
         try {
@@ -101,7 +101,7 @@ class Session {
           this.state_ = State.AWAITING_REQUEST;
         } catch (e) {
           log.warn('%1/%2: could not parse auths: %3', this.getterId_, this.id_, e.message);
-          this.disconnected();
+          this.onRemoteDisconnect();
         }
         break;
       case State.AWAITING_REQUEST:
@@ -132,7 +132,7 @@ class Session {
             this.socket_.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
               log.info('%1/%2: disconnected from remote endpoint: %3',
                   this.getterId_, this.id_, info);
-              this.disconnected();
+              this.onRemoteDisconnect();
             });
           }, (e:freedom.Error) => {
             log.warn('%1/%2: failed to connect to remote endpoint: %3',
@@ -141,11 +141,11 @@ class Session {
             this.send_(headers.composeResponseBuffer({
               reply: headers.Reply.FAILURE
             }));
-            this.disconnected();
+            this.onRemoteDisconnect();
           });
         } catch (e) {
           log.warn('%1/%2: could not parse request: %3', this.getterId_, this.id_, e.message);
-          this.disconnected();
+          this.onRemoteDisconnect();
         }
         break;
       case State.CONNECTED:
@@ -157,12 +157,11 @@ class Session {
     }
   }
 
-  public disconnected = () => {
+  public onRemoteDisconnect = () => {
     log.debug('%1/%2: terminating (current state: %3)',
         this.getterId_, this.id_, State[this.state_]);
     if (this.state_ === State.CONNECTED) {
       this.state_ = State.DISCONNECTED;
-      // TODO: use counter, to guard against early onDisconnect notifications
       this.socket_.off('onData', this.onData_);
       this.socket_.close();      
     }

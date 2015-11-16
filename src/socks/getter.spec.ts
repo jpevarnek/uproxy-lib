@@ -37,12 +37,12 @@ describe('getter', function() {
 
   it('notifies giver of new connections', (done) => {
     myGetter.setGiver(<middle.RemotePeer>{
-      connected: (client:string) => {
+      onRemoteConnect: (client:string) => {
         expect(client).toEqual('127.0.0.1:55000');
         done();
       },
-      handle:  (client: string, buffer: ArrayBuffer) => {},
-      disconnected: (client:string) => {}
+      onRemoteData:  (client: string, buffer: ArrayBuffer) => {},
+      onRemoteDisconnect: (client:string) => {}
     });
 
     mockServerSocket.handleEvent('onConnection', <freedom.TcpSocket.ConnectInfo>{
@@ -55,14 +55,14 @@ describe('getter', function() {
   // TODO: fail if getter calls close on the client connection
   it('notifies giver of disconnection', (done) => {
     myGetter.setGiver(<middle.RemotePeer>{
-      connected: (client: string) => {
+      onRemoteConnect: (client: string) => {
         mockClientSocket.handleEvent('onDisconnect', <freedom.TcpSocket.DisconnectInfo>{
           errcode: 'none',
           message: 'none'
         });
       },
-      handle: (client: string, buffer: ArrayBuffer) => { },
-      disconnected: (client: string) => {
+      onRemoteData: (client: string, buffer: ArrayBuffer) => { },
+      onRemoteDisconnect: (client: string) => {
         expect(client).toEqual('127.0.0.1:55000');
         done();
       }
@@ -78,11 +78,11 @@ describe('getter', function() {
   // TODO: fail if getter notifies the giver of disconnection
   it('handles remote disconnection', (done) => {
     myGetter.setGiver(<middle.RemotePeer>{
-      connected: (client: string) => {
-        myGetter.disconnected(client);
+      onRemoteConnect: (client: string) => {
+        myGetter.onRemoteDisconnect(client);
       },
-      handle: (client: string, buffer: ArrayBuffer) => {},
-      disconnected: (client: string) => {}
+      onRemoteData: (client: string, buffer: ArrayBuffer) => {},
+      onRemoteDisconnect: (client: string) => {}
     });
 
     var closeSpy = spyOn(mockClientSocket, 'close').and.callFake(done);
