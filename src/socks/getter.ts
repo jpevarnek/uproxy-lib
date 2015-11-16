@@ -35,6 +35,9 @@ export class Getter implements middle.RemotePeer {
   // Keyed by client ID.
   private connections_:{[id:string]:Session} = {};
 
+  // Number of sessions created, for logging.
+  private numSessions_ = 0;
+
   // Do not call this directly.
   // Use the static constructors instead.
   constructor(
@@ -57,8 +60,8 @@ export class Getter implements middle.RemotePeer {
 
   private onConnection_ = (
       connectInfo:freedom.TcpSocket.ConnectInfo) : void => {
-    var clientId = connectInfo.host + ':' + connectInfo.port;
-    log.info('%1: new socket from %2', this.name_, clientId);
+    var clientId = 'p' + (this.numSessions_++);
+    log.info('%1: new client %2 from %3', this.name_, clientId, connectInfo);
 
     var connection :freedom.TcpSocket.Socket =
         freedom['core.tcpsocket'](connectInfo.socket);
@@ -120,7 +123,7 @@ class Session {
     this.socket_.on('onData', this.onData_);
 
     this.socket_.on('onDisconnect', (info: freedom.TcpSocket.DisconnectInfo) => {
-      log.info('%1/%2: disconnected', this.getterId_, this.id_);
+      log.info('%1/%2: disconnected %3', this.getterId_, this.id_, info);
       // TODO: use counter, to guard against early onDisconnect notifications
       freedom['core.tcpsocket'].close(this.socket_);
       this.disconnected_();
