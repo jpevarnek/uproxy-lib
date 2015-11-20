@@ -13,6 +13,7 @@ import logging = require('../logging/logging');
 import net = require('../net/net.types');
 import PassThrough = require('../transformers/passthrough');
 import protean = require('../transformers/protean');
+import rc4 = require('../transformers/rc4Shaper');
 import sequence = require('../transformers/byteSequenceShaper');
 
 import Socket = freedom.UdpSocket.Socket;
@@ -44,6 +45,7 @@ var transformers :{[name:string] : new() => Transformer} = {
   'fragmentationShaper': fragmentation.FragmentationShaper,
   'none': PassThrough,
   'protean': protean.Protean,
+  'rc4': rc4.RC4Shaper,
   'sequenceShaper': sequence.ByteSequenceShaper
 };
 
