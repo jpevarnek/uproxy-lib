@@ -13,6 +13,7 @@ import logging = require('../logging/logging');
 import net = require('../net/net.types');
 import PassThrough = require('../transformers/passthrough');
 import protean = require('../transformers/protean');
+import rc4 = require('../transformers/rc4Shaper');
 import sequence = require('../transformers/byteSequenceShaper');
 import header = require('../transformers/headerShaper');
 
@@ -46,7 +47,8 @@ var transformers :{[name:string] : new() => Transformer} = {
   'none': PassThrough,
   'protean': protean.Protean,
   'sequenceShaper': sequence.ByteSequenceShaper,
-  'header': header.HeaderShaper
+  'header': header.HeaderShaper,
+  'rc4': rc4.RC4Shaper
 };
 
 interface MirrorSet {
