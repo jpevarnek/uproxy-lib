@@ -4,14 +4,14 @@
 import arraybuffers = require('../arraybuffers/arraybuffers');
 import bridge = require('../bridge/bridge');
 import churn_types = require('../churn/churn.types');
-import encryption = require('../fancy-transformers/encryptionShaper');
+import encryption = require('../transformers/encryptionShaper');
 import logging = require('../logging/logging');
 import loggingTypes = require('../loggingprovider/loggingprovider.types');
 import net = require('../net/net.types');
-import protean = require('../fancy-transformers/protean');
+import protean = require('../transformers/protean');
 import rtc_to_net = require('../rtc-to-net/rtc-to-net');
 import socks_to_rtc = require('../socks-to-rtc/socks-to-rtc');
-import sequence = require('../fancy-transformers/byteSequenceShaper');
+import sequence = require('../transformers/byteSequenceShaper');
 import tcp = require('../net/tcp');
 
 const loggingController = freedom['loggingcontroller']();

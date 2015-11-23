@@ -4,7 +4,7 @@ import arraybuffers = require('../arraybuffers/arraybuffers');
 import logging = require('../logging/logging');
 import random = require('../crypto/random');
 
-const log :logging.Log = new logging.Log('fancy-transformers');
+const log :logging.Log = new logging.Log('header');
 
 // Accepted in serialised form by configure().
 export interface HeaderConfig {
