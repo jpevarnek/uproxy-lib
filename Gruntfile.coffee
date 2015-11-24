@@ -25,6 +25,7 @@ taskManager.add 'samples', [
   'simpleTurn'
   'uprobe'
   'zork'
+  'provision'
 ]
 
 # Makes the distribution build.
@@ -106,6 +107,12 @@ taskManager.add 'zork', [
   'copy:libsForZorkChromeApp'
   'copy:libsForZorkFirefoxApp'
   'copy:libsForZorkNode'
+]
+
+taskManager.add 'provision', [
+  'base'
+  'browserify:provisionFreedomModule'
+  'copy:libsForProvisionChromeApp'
 ]
 
 # Create unit test code
@@ -276,6 +283,13 @@ module.exports = (grunt) ->
       ###
       # Samples.
       ###
+      libsForProvisionChromeApp:
+        Rule.copyLibs
+          npmLibNames: ['freedom-for-chrome', 'forge-min']
+          pathsFromDevBuild: ['loggingprovider', 'cloud/provision']
+          pathsFromThirdPartyBuild: [
+          ]
+          localDestPath: 'samples/provision-chromeapp/'
       libsForZorkChromeApp:
         Rule.copyLibs
           npmLibNames: ['freedom-for-chrome']
@@ -576,6 +590,7 @@ module.exports = (grunt) ->
       simpleTurnFreedomModule: Rule.browserify 'simple-turn/freedom-module'
       uprobeFreedomModule: Rule.browserify 'uprobe/freedom-module'
       zorkFreedomModule: Rule.browserify 'zork/freedom-module'
+      provisionFreedomModule: Rule.browserify 'cloud/provision/freedom-module'
       # Sample app main environments (samples with UI).
       copypasteChatMain: Rule.browserify 'copypaste-chat/main.core-env'
       copypasteSocksMain: Rule.browserify 'copypaste-socks/main.core-env'
