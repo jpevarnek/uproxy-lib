@@ -69,6 +69,7 @@ taskManager.add 'keys', [
   'base'
   'browserify:keysFreedomModule'
   'copy:libsForKeysChromeApp'
+  'copy:libsForKeysFirefoxApp'
 ]
 
 taskManager.add 'simpleChat', [
@@ -388,6 +389,12 @@ module.exports = (grunt) ->
           npmLibNames: ['freedom-for-chrome']
           pathsFromDevBuild: ['keys', 'loggingprovider']
           localDestPath: 'samples/keys-chromeapp/'
+
+      libsForKeysFirefoxApp:
+        Rule.copyLibs
+          npmLibNames: ['freedom-for-firefox']
+          pathsFromDevBuild: ['keys', 'loggingprovider']
+          localDestPath: 'samples/keys-firefoxapp/data'
 
       libsForSimpleSocksChromeApp:
         Rule.copyLibs

@@ -1,0 +1,8 @@
+{
+  "name": "keys",
+  "title": "keys",
+  "description": "Debugging key-based authentication with ssh2.",
+  "author": "uProxy",
+  "license": "Apache 2",
+  "version": "0.0.1"
+}
