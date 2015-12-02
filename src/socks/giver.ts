@@ -129,6 +129,8 @@ class Session {
               }
             }));
             this.socket_.on('onData', this.onData_);
+
+            // onDisconnect is received *after* all onData events
             this.socket_.on('onDisconnect', (info:freedom.TcpSocket.DisconnectInfo) => {
               log.info('%1/%2: disconnected from remote endpoint: %3',
                   this.getterId_, this.id_, info);

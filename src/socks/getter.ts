@@ -122,6 +122,7 @@ class Session {
       private disconnected_: () => void) {
     this.socket_.on('onData', this.onData_);
 
+    // onDisconnect is received *after* all onData events
     this.socket_.on('onDisconnect', (info: freedom.TcpSocket.DisconnectInfo) => {
       log.info('%1/%2: disconnected %3', this.getterId_, this.id_, info);
       // TODO: use counter, to guard against early onDisconnect notifications
@@ -141,6 +142,7 @@ class Session {
 
   public onRemoteDisconnect = () => {
     this.socket_.off('onData', this.onData_);
-    this.socket_.close();
+    // TODO: When is it safe to close the socket, given that we
+    //       cannot know when the client has read all data?
   }
 }
