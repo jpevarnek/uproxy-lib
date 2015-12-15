@@ -16,20 +16,22 @@ const log :logging.Log = new logging.Log('simple-socks');
 
 const SERVER_ADDRESS = '0.0.0.0';
 const SERVER_PORT = 9999;
+const SERVER_NAME = 'sample';
 
 // 100% freedomjs-based SOCKS server, with direct function calls
 // between the server and sessions.
 let numSessions = 0;
-var server = new FreedomSocksServer(SERVER_ADDRESS, SERVER_PORT,
+const server = new FreedomSocksServer(SERVER_ADDRESS, SERVER_PORT,
     (session:SocksSession) => {
-  let clientId = 'p' + (numSessions++) + 'p';
+  const clientId = 'p' + (numSessions++) + 'p';
   log.info('new client %1', clientId);
   return new FreedomSocksSession(
-    'sample',
+    SERVER_NAME,
     clientId,
     session.onRemoteData,
     session.onRemoteDisconnect);
-});
+}, SERVER_NAME);
+
 server.listen().then(() => {
   log.info('SOCKS server started!');
   log.info('curl -x socks5h://%1:%2 www.example.com',

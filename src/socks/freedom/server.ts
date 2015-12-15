@@ -65,7 +65,7 @@ class FreedomSocksServer {
         // onDisconnect is received after all onData events.
         clientSocket.on('onDisconnect', (info: freedom.TcpSocket.DisconnectInfo) => {
           log.info('%1: client socket for %2 disconnected (%3)',
-              clientId, clientId, info);
+              this.name_, clientId, info);
           // TODO: use counter, to guard against early onDisconnect notifications
           freedom['core.tcpsocket'].close(clientSocket);
           session.onRemoteDisconnect();
