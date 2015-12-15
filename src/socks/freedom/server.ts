@@ -18,12 +18,8 @@ class FreedomSocksServer {
   // Number of sessions created, for logging.
   private numSessions_ = 0;
 
-  // Do not call this directly.
-  // Use the static constructors instead.
   constructor(
       private requestedEndpoint_: net.Endpoint,
-      // // TODO: typing
-      // private sessionFactory_: (ondata:any, ondisconnected:any) => SocksSession,
       private sessionFactory_: (session:SocksSession) => SocksSession,
       private name_: string = 'unnamed-getter-' + FreedomSocksServer.id_) {
     FreedomSocksServer.id_++;
@@ -33,9 +29,10 @@ class FreedomSocksServer {
     return this.serverSocket.listen(
         this.requestedEndpoint_.address,
         this.requestedEndpoint_.port).then(() => {
-      this.serverSocket.on('onConnection', (connectInfo: freedom.TcpSocket.ConnectInfo) => {
-        let clientId = 'p' + (this.numSessions_++) + 'p';
-        log.info('new client %1 from %2', clientId, connectInfo);
+      this.serverSocket.on('onConnection',
+          (connectInfo: freedom.TcpSocket.ConnectInfo) => {
+        var clientId = connectInfo.host + ':' + connectInfo.port;
+        log.info('%1: new client from %2:%3', this.name_, clientId);
 
         let clientSocket: freedom.TcpSocket.Socket =
           freedom['core.tcpsocket'](connectInfo.socket);
@@ -50,18 +47,26 @@ class FreedomSocksServer {
             clientSocket.write(buffer);
           },
           onRemoteDisconnect: () => {
-            log.debug('%1 session terminated', clientId);
+            log.debug('%1: remote peer for %2 has disconnected',
+                this.name_, clientId);
+            // Stop reading data immediately since there is no longer any
+            // point forwarding it to the remote peer. Note that we cannot
+            // close the socket yet because the SOCKS client may still be
+            // reading from it and we have no way to query the size of the
+            // socket's outgoing buffer. The importance of this is easy to
+            // verify with curl's --limit-rate option. While this is fine
+            // for well-behaved HTTP clients, it's a real nuisance for other
+            // protocols and testing.
             clientSocket.off('onData', onData);
-            // TODO: When is it safe to close the socket, given that we
-            //       cannot know when the client has read all data?
           }
         });
 
         clientSocket.on('onData', onData);
 
-        // onDisconnect is received *after* all onData events
+        // onDisconnect is received after all onData events.
         clientSocket.on('onDisconnect', (info: freedom.TcpSocket.DisconnectInfo) => {
-          log.info('%1 client socket disconnected (%2)', clientId, info);
+          log.info('%1: client socket for %2 disconnected (%3)',
+              clientId, clientId, info);
           // TODO: use counter, to guard against early onDisconnect notifications
           freedom['core.tcpsocket'].close(clientSocket);
           session.onRemoteDisconnect();
