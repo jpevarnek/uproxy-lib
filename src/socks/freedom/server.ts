@@ -31,7 +31,7 @@ class FreedomSocksServer {
       this.serverSocket.on('onConnection',
           (connectInfo: freedom.TcpSocket.ConnectInfo) => {
         var clientId = connectInfo.host + ':' + connectInfo.port;
-        log.info('%1: new client from %2:%3', this.name_, clientId);
+        log.info('%1: new client from %2', this.name_, clientId);
 
         let clientSocket: freedom.TcpSocket.Socket =
           freedom['core.tcpsocket'](connectInfo.socket);
@@ -43,6 +43,7 @@ class FreedomSocksServer {
 
         let session = this.sessionFactory_({
           onRemoteData: (buffer: ArrayBuffer) => {
+            // TODO: be reckless
             clientSocket.write(buffer);
           },
           onRemoteDisconnect: () => {
