@@ -117,7 +117,9 @@ class FreedomSocksSession implements SocksSession {
     log.debug('%1/%2: remote peer has disconnected', this.id_, this.serverId_);
     // See the note in FreedomSocksServer on why we don't close the
     // socket at this point.
-    this.socket_.off('onData', this.onData_);
+    if (this.socket_) {
+      this.socket_.off('onData', this.onData_);
+    }
   }
 }
 
