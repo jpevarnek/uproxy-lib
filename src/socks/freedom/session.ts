@@ -5,7 +5,6 @@ import SocksSession = require('../session');
 
 import headers = require('../../socks-common/socks-headers');
 import logging = require('../../logging/logging');
-import net = require('../../net/net.types');
 
 const log: logging.Log = new logging.Log('freedom socks session');
 

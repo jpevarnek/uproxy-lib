@@ -4,7 +4,6 @@
 import SocksSession = require('../session');
 
 import logging = require('../../logging/logging');
-import net = require('../../net/net.types');
 
 const log: logging.Log = new logging.Log('freedom socks server');
 
@@ -19,16 +18,16 @@ class FreedomSocksServer {
   private numSessions_ = 0;
 
   constructor(
-      private requestedEndpoint_: net.Endpoint,
+      private requestedAddress_: string,
+      private requestedPort_: number,
       private sessionFactory_: (session:SocksSession) => SocksSession,
       private name_: string = 'unnamed-getter-' + FreedomSocksServer.id_) {
     FreedomSocksServer.id_++;
   }
 
   public listen = () => {
-    return this.serverSocket.listen(
-        this.requestedEndpoint_.address,
-        this.requestedEndpoint_.port).then(() => {
+    return this.serverSocket.listen(this.requestedAddress_,
+        this.requestedPort_).then(() => {
       this.serverSocket.on('onConnection',
           (connectInfo: freedom.TcpSocket.ConnectInfo) => {
         var clientId = connectInfo.host + ':' + connectInfo.port;
