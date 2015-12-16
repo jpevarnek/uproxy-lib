@@ -16,6 +16,7 @@ enum State {
   DISCONNECTED
 }
 
+// TODO: resource limits, e.g. maximum number of concurrent sessions
 class FreedomSocksSession implements SocksSession {
   private state_ = State.AWAITING_AUTHS;
   private socket_: freedom.TcpSocket.Socket;
